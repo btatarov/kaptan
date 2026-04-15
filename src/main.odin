@@ -4,6 +4,8 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 
+import rl "vendor:raylib"
+
 main :: proc() {
     when ODIN_DEBUG {
         tracking_allocator: mem.Tracking_Allocator
@@ -24,5 +26,18 @@ main :: proc() {
         n: fmt.Info; _ = n
     }
 
-    fmt.println("Running", os.args[1])
+    rl.InitWindow(1024, 768, "Kaptan")
+    defer rl.CloseWindow()
+
+    default_text := fmt.caprintf("Running %v", os.args[1])
+    defer delete(default_text)
+
+    for ! rl.WindowShouldClose() {
+        rl.BeginDrawing()
+
+        rl.ClearBackground(rl.RAYWHITE)
+        rl.DrawText(default_text, 10, 10, 20, rl.MAROON)
+
+        rl.EndDrawing()
+    }
 }
