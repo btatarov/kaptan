@@ -6,7 +6,14 @@ import "core:os"
 
 import rl "vendor:raylib"
 
+import "core"
+
 main :: proc() {
+    core.InitContext()
+    defer core.DestroyContext()
+
+    context = core.GetDefaultContext()
+
     when ODIN_DEBUG {
         tracking_allocator: mem.Tracking_Allocator
         mem.tracking_allocator_init(&tracking_allocator, context.allocator)
