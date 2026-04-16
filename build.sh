@@ -1,7 +1,7 @@
 #!/bin/sh
 DEFAULT_BUILD="debug"
 ALLOWED_BUILDS=("release" "debug")
-DEFAULT_SCRIPT="test/main.lua"
+DEFAULT_SCRIPT="tests/main.lua"
 
 build=${1:-$DEFAULT_BUILD}
 script=${2:-$DEFAULT_SCRIPT}

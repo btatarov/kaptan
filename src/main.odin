@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:os"
 
@@ -29,10 +30,26 @@ main :: proc() {
         }
     }
 
+    L := core.InitLuaState()
+    defer core.DestroyLuaState(L)
+
+    if len(os.args) > 1 {
+        log.debug("Running lua with argument:", os.args[1])
+        core.LuaRun(L, os.args[1:])
+    } else {
+        log.debug("Running lua without arguments, defaulting to main.lua")
+        core.LuaRun(L, []string{})
+    }
+
     rl.InitWindow(1024, 768, "Kaptan")
     defer rl.CloseWindow()
 
-    default_text := fmt.caprintf("Running %v", os.args[1])
+    default_text: cstring
+    if len(os.args) > 1 {
+        default_text = fmt.caprintf("Running %v", os.args[1])
+    } else {
+        default_text = fmt.caprintf("Running main.lua")
+    }
     defer delete(default_text)
 
     for ! rl.WindowShouldClose() {
