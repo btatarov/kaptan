@@ -20,10 +20,6 @@ main :: proc() {
                 fmt.printf("%v allocation %p was freed badly\n", bad_free.location, bad_free.memory)
             }
         }
-    } else {
-        // HACK: avoid compile warnings
-        m: mem.Allocator_Error; _ = m
-        n: fmt.Info; _ = n
     }
 
     rl.InitWindow(1024, 768, "Kaptan")
