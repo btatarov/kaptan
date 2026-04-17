@@ -5,9 +5,8 @@ import "core:log"
 import "core:mem"
 import "core:os"
 
-import rl "vendor:raylib"
-
 import "core"
+import "graphics"
 
 main :: proc() {
     core.InitContext()
@@ -33,6 +32,11 @@ main :: proc() {
     L := core.InitLuaState()
     defer core.DestroyLuaState(L)
 
+    graphics.WindowLuaBind(L)
+    defer {
+        graphics.WindowLuaUnbind(L)
+    }
+
     if len(os.args) > 1 {
         log.debug("Running lua with argument:", os.args[1])
         core.LuaRun(L, os.args[1:])
@@ -41,23 +45,5 @@ main :: proc() {
         core.LuaRun(L, []string{})
     }
 
-    rl.InitWindow(1024, 768, "Kaptan")
-    defer rl.CloseWindow()
-
-    default_text: cstring
-    if len(os.args) > 1 {
-        default_text = fmt.caprintf("Running %v", os.args[1])
-    } else {
-        default_text = fmt.caprintf("Running main.lua")
-    }
-    defer delete(default_text)
-
-    for ! rl.WindowShouldClose() {
-        rl.BeginDrawing()
-
-        rl.ClearBackground(rl.RAYWHITE)
-        rl.DrawText(default_text, 10, 10, 20, rl.MAROON)
-
-        rl.EndDrawing()
-    }
+    graphics.WindowMainLoop()
 }

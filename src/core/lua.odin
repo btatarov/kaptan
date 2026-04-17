@@ -24,7 +24,7 @@ GetLuaState :: proc() -> ^lua.State {
 
 LuaCheckOK :: proc(L: ^lua.State, status: lua.Status) -> bool {
     if status != lua.OK {
-        log.errorf("%s\n", lua.tostring(L, -1))
+        log.errorf("%s", lua.tostring(L, -1))
         return false
     }
     return true
