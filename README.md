@@ -21,4 +21,11 @@ List of available functions:
 
 ### Renderer
 
+* KaptanRenderer.add(layer)
+* KaptanRenderer.clear()
 * KaptanRenderer.setClearColor(r, g, b, a)
+
+### Layer
+
+* KaptanLayer.new()
+* KaptanLayer.setVisible(visible)

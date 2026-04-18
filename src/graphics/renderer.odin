@@ -10,22 +10,35 @@ import "../core"
 
 Renderer :: struct {
     clear_color: rl.Color,
+    layer_list:  [dynamic]^Layer,
 }
 
 @(private="file") renderer: Renderer
 
 InitRenderer :: proc() {
     log.debugf("KaptanRenderer: Init")
+
+    renderer.layer_list = make([dynamic]^Layer)
 }
 
 DestroyRenderer :: proc() {
     log.debugf("KaptanRenderer: Destroy")
+
+    delete(renderer.layer_list)
 }
 
 RendererDraw :: proc() {
     rl.BeginDrawing()
 
     rl.ClearBackground(renderer.clear_color)
+
+    for layer in renderer.layer_list {
+        if ! layer.visible || layer.is_gone {
+            continue
+        }
+
+        // TODO: draw layer
+    }
 
     // FPS counter
     when ODIN_DEBUG {
@@ -39,7 +52,9 @@ RendererDraw :: proc() {
 
 RendererLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
-        { "setClearColor",  _setClearColor},
+        { "add",           _add },
+        { "clear",         _clear },
+        { "setClearColor", _setClearColor},
         { nil, nil },
     }
     core.LuaBindSingleton(L, "KaptanRenderer", &reg_table)
@@ -49,6 +64,28 @@ RendererLuaUnbind :: proc(L: ^lua.State) {
     DestroyRenderer()
 }
 
+@(private="file")
+_add :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    // TODO: remove on __gc or __close?
+    layer := (^Layer)(lua.touserdata(L, -1))
+    append(&renderer.layer_list, layer)
+
+    return 0
+}
+
+@(private="file")
+_clear :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    delete(renderer.layer_list)
+    renderer.layer_list = make([dynamic]^Layer)
+
+    return 0
+}
+
+@(private="file")
 _setClearColor :: proc "c" (L: ^lua.State) -> i32 {
     r := u8(lua.tonumber(L, 1))
     g := u8(lua.tonumber(L, 2))
