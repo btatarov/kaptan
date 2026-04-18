@@ -18,3 +18,7 @@ List of available functions:
 * KaptanWindow.setMaxFPS(fps)
 * KaptanWindow.setVsync(enabled)
 * KaptanWindow.quit()
+
+### Renderer
+
+* KaptanRenderer.setClearColor(r, g, b, a)

@@ -1,6 +1,5 @@
 package graphics
 
-import "core:fmt"
 import "core:log"
 
 import lua "vendor:lua/5.4"
@@ -66,6 +65,8 @@ WindowMainLoop :: proc() {
 
     log.debugf("KaptanWindow: MainLoop")
 
+    InitRenderer()
+
     for ! window.close && ! rl.WindowShouldClose() {
         // logic
         if loop_callback_ref != lua.REFNIL {
@@ -78,26 +79,13 @@ WindowMainLoop :: proc() {
         }
 
         // rendering
-        rl.BeginDrawing()
-
-        rl.ClearBackground(rl.BLACK)
-
-        // FPS counter
-        when ODIN_DEBUG {
-            fps_text := fmt.ctprintf("FPS: %v", rl.GetFPS())
-            text_size := rl.MeasureTextEx(rl.GetFontDefault(), fps_text, 20, 1)
-            rl.DrawText(fps_text, rl.GetScreenWidth() - i32(text_size.x) - 20, 10, 20, rl.WHITE)
-        }
-
-        rl.EndDrawing()
+        RendererDraw()
 
         window.frames += 1
         window.time += f64(rl.GetFrameTime())
 
         free_all(context.temp_allocator)
     }
-
-    DestroyWindow()
 }
 
 @(private="file")

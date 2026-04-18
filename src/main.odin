@@ -33,7 +33,9 @@ main :: proc() {
     defer core.DestroyLuaState(L)
 
     graphics.WindowLuaBind(L)
+    graphics.RendererLuaBind(L)
     defer {
+        graphics.RendererLuaUnbind(L)
         graphics.WindowLuaUnbind(L)
     }
 
