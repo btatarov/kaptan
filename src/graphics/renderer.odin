@@ -19,11 +19,13 @@ InitRenderer :: proc() {
     log.debugf("KaptanRenderer: Init")
 
     renderer.layer_list = make([dynamic]^Layer)
+    InitTextureCache()
 }
 
 DestroyRenderer :: proc() {
     log.debugf("KaptanRenderer: Destroy")
 
+    DestroyTextureCache()
     delete(renderer.layer_list)
 }
 
@@ -37,7 +39,11 @@ RendererDraw :: proc() {
             continue
         }
 
-        // TODO: draw layer
+        for sprite in layer.sprites {
+            if ! sprite.is_gone && sprite.visible {
+                rl.DrawTexture(sprite.texture.tex, i32(sprite.position.x), i32(sprite.position.y), rl.WHITE)
+            }
+        }
     }
 
     // FPS counter
@@ -58,6 +64,8 @@ RendererLuaBind :: proc(L: ^lua.State) {
         { nil, nil },
     }
     core.LuaBindSingleton(L, "KaptanRenderer", &reg_table)
+
+    InitRenderer()
 }
 
 RendererLuaUnbind :: proc(L: ^lua.State) {

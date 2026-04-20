@@ -65,8 +65,6 @@ WindowMainLoop :: proc() {
 
     log.debugf("KaptanWindow: MainLoop")
 
-    InitRenderer()
-
     for ! window.close && ! rl.WindowShouldClose() {
         // logic
         if loop_callback_ref != lua.REFNIL {

@@ -28,4 +28,14 @@ List of available functions:
 ### Layer
 
 * KaptanLayer.new()
+* KaptanLayer.isVisible()
 * KaptanLayer.setVisible(visible)
+* KaptanLayer.add(sprite)
+
+### Sprite
+
+* KaptanSprite.new(path)
+* KaptanSprite.getPos()
+* KaptanSprite.isVisible()
+* KaptanSprite.setPos(x, y)
+* KaptanSprite.setVisible(visible)
