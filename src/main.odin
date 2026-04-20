@@ -36,7 +36,9 @@ main :: proc() {
     graphics.RendererLuaBind(L)
     graphics.LayerLuaBind(L)
     graphics.SpriteLuaBind(L)
+    graphics.CameraLuaBind(L)
     defer {
+        graphics.CameraLuaUnbind(L)
         graphics.SpriteLuaUnbind(L)
         graphics.LayerLuaUnbind(L)
         graphics.RendererLuaUnbind(L)

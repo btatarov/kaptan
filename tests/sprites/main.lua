@@ -14,10 +14,10 @@ for i = 1, 10 do
     else
         sprites[i] = KaptanSprite.new('tests/sprites/kaptan2.png')
     end
-    sprites[i]:setPos(math.random() * (1024 - 200), math.random() * (768 - 200))
+    -- sprites[i]:setPos(math.random() * (1024 - 200), math.random() * (768 - 200))
     layer:add(sprites[i])
 
-    if i % 3 == 0 then
-        sprites[i]:setVisible(false)
-    end
+    -- if i % 3 == 0 then
+    --     sprites[i]:setVisible(false)
+    -- end
 end

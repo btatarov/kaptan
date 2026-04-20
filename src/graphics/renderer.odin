@@ -34,6 +34,8 @@ RendererDraw :: proc() {
 
     rl.ClearBackground(renderer.clear_color)
 
+    rl.BeginMode2D(GetCamera()^)
+
     for layer in renderer.layer_list {
         if ! layer.visible || layer.is_gone {
             continue
@@ -45,6 +47,8 @@ RendererDraw :: proc() {
             }
         }
     }
+
+    rl.EndMode2D()
 
     // FPS counter
     when ODIN_DEBUG {

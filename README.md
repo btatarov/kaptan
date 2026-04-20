@@ -25,6 +25,17 @@ List of available functions:
 * KaptanRenderer.clear()
 * KaptanRenderer.setClearColor(r, g, b, a)
 
+### Camera
+
+* KaptanCamera.getPiv()
+* KaptanCamera.getPos()
+* KaptanCamera.getRot()
+* KaptanCamera.getZoom()
+* KaptanCamera.setPiv(x, y)
+* KaptanCamera.setPos(x, y)
+* KaptanCamera.setRot(angle)
+* KaptanCamera.setZoom(zoom)
+
 ### Layer
 
 * KaptanLayer.new()
