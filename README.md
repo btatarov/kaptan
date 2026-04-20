@@ -46,7 +46,14 @@ List of available functions:
 ### Sprite
 
 * KaptanSprite.new(path)
+* KaptanSprite.getPiv()
 * KaptanSprite.getPos()
+* KaptanSprite.getRot()
+* KaptanSprite.getScl()
+* KaptanSprite.getSize()
 * KaptanSprite.isVisible()
+* KaptanSprite.setPiv(x, y)
 * KaptanSprite.setPos(x, y)
+* KaptanSprite.setRot(angle)
+* KaptanSprite.setScl(x, y)
 * KaptanSprite.setVisible(visible)

@@ -42,9 +42,7 @@ RendererDraw :: proc() {
         }
 
         for sprite in layer.sprites {
-            if ! sprite.is_gone && sprite.visible {
-                rl.DrawTexture(sprite.texture.tex, i32(sprite.position.x), i32(sprite.position.y), rl.WHITE)
-            }
+            sprite->draw()
         }
     }
 

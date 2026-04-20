@@ -1,26 +1,30 @@
 package graphics
 
 import "core:log"
-import "core:math/linalg"
 import "core:strings"
 
 import lua "vendor:lua/5.4"
+import rl "vendor:raylib"
 
 import "../core"
 
 Sprite :: struct {
-    texture:  ^Texture,
-    position: linalg.Vector3f32,
-    width:    i32,
-    height:   i32,
-    visible:  bool,
-    is_gone:  bool,
+    using transform: Transform,
+    texture:         ^Texture,
+    width:           i32,
+    height:          i32,
+    visible:         bool,
+    is_gone:         bool,
+
+    draw:            proc(sprite: ^Sprite),
 }
 
 @(private="file") sprite_count: u32
 
 InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
     log.debugf("LakshmiSprite: Init\n")
+
+    InitTransform(&sprite.transform)
 
     sprite.texture = texture
     sprite.width   = texture.tex.width
@@ -29,6 +33,8 @@ InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
     sprite.is_gone = false
 
     sprite_count += 1
+
+    sprite.draw = sprite_draw
 }
 
 DestroySprite :: proc(sprite: ^Sprite) {
@@ -47,9 +53,16 @@ DestroySprite :: proc(sprite: ^Sprite) {
 SpriteLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
         { "new",        _new },
+        { "getPiv",     _get_piv },
         { "getPos",     _get_pos },
+        { "getRot",     _get_rot },
+        { "getScl",     _get_scl },
+        { "getSize",    _get_size },
         { "isVisible",  _get_visible },
+        { "setPiv",     _set_piv },
         { "setPos",     _set_pos },
+        { "setRot",     _set_rot },
+        { "setScl",     _set_scl },
         { "setVisible", _set_visible },
         { nil, nil },
     }
@@ -58,6 +71,47 @@ SpriteLuaBind :: proc(L: ^lua.State) {
 
 SpriteLuaUnbind :: proc(L: ^lua.State) {
     // nothing to do
+}
+
+@(private="file")
+sprite_draw :: proc(sprite: ^Sprite) {
+    if !sprite.is_gone && sprite.visible {
+        w := f32(sprite.width)
+        h := f32(sprite.height)
+
+        screen_center := rl.Vector2{
+            f32(rl.GetScreenWidth()) * 0.5,
+            f32(rl.GetScreenHeight()) * 0.5,
+        }
+
+        src := rl.Rectangle{
+            0,
+            0,
+            w,
+            h,
+        }
+
+        origin := rl.Vector2{
+            (w * 0.5 + sprite.pivot.x) * sprite.scale.x,
+            (h * 0.5 + sprite.pivot.y) * sprite.scale.y,
+        }
+
+        dst := rl.Rectangle{
+            screen_center.x + sprite.position.x + sprite.pivot.x,
+            screen_center.y + sprite.position.y + sprite.pivot.y,
+            w * sprite.scale.x,
+            h * sprite.scale.y,
+        }
+
+        rl.DrawTexturePro(
+            sprite.texture.tex,
+            src,
+            dst,
+            origin,
+            sprite.rotation,
+            rl.WHITE,
+        )
+    }
 }
 
 @(private="file")
@@ -76,11 +130,50 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_get_piv :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    lua.pushnumber(L, lua.Number(sprite.pivot.x))
+    lua.pushnumber(L, lua.Number(sprite.pivot.y))
+
+    return 2
+}
+
+@(private="file")
 _get_pos :: proc "c" (L: ^lua.State) -> i32 {
     sprite := (^Sprite)(lua.touserdata(L, 1))
 
     lua.pushnumber(L, lua.Number(sprite.position.x))
     lua.pushnumber(L, lua.Number(sprite.position.y))
+
+    return 2
+}
+
+@(private="file")
+_get_rot :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    lua.pushnumber(L, lua.Number(sprite.rotation))
+
+    return 1
+}
+
+@(private="file")
+_get_scl :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    lua.pushnumber(L, lua.Number(sprite.scale.x))
+    lua.pushnumber(L, lua.Number(sprite.scale.y))
+
+    return 2
+}
+
+@(private="file")
+_get_size :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    lua.pushnumber(L, lua.Number(sprite.width))
+    lua.pushnumber(L, lua.Number(sprite.height))
 
     return 2
 }
@@ -95,11 +188,40 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_set_piv :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    sprite.pivot.x = f32(lua.tonumber(L, 2))
+    sprite.pivot.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
     sprite := (^Sprite)(lua.touserdata(L, 1))
 
     sprite.position.x = f32(lua.tonumber(L, 2))
     sprite.position.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_rot :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    sprite.rotation = f32(lua.tonumber(L, 2))
+
+    return 0
+}
+
+@(private="file")
+_set_scl :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := (^Sprite)(lua.touserdata(L, 1))
+
+    sprite.scale.x = f32(lua.tonumber(L, 2))
+    sprite.scale.y = f32(lua.tonumber(L, 3))
 
     return 0
 }
