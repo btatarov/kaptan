@@ -62,6 +62,7 @@ List of available functions:
 ### Text
 
 * text = KaptanText.new(font_path, text, font_size)
+* text:setColor(r, g, b, a)
 * text:setPos(x, y)
 * text:setText(text)
 

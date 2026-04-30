@@ -79,8 +79,9 @@ TextLuaBind :: proc(L: ^lua.State) {
     }
 
     @static instance_reg_table: []lua.L_Reg = {
-        { "setPos",  _set_pos },
-        { "setText", _set_text },
+        { "setColor", _set_color },
+        { "setPos",   _set_pos },
+        { "setText",  _set_text },
         { nil, nil },
     }
 
@@ -149,6 +150,20 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 
     text.position.x = f32(lua.tonumber(L, 2))
     text.position.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_color :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    r := u8(clamp(int(lua.L_checkinteger(L, 2)), 0, 255))
+    g := u8(clamp(int(lua.L_checkinteger(L, 3)), 0, 255))
+    b := u8(clamp(int(lua.L_checkinteger(L, 4)), 0, 255))
+    a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
+
+    text.color = rl.Color{r, g, b, a}
 
     return 0
 }

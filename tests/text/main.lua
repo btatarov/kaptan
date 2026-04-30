@@ -9,4 +9,5 @@ KaptanRenderer.add(layer)
 
 text = KaptanText.new('tests/text/unitblock.ttf', 'Hello, World!', 72)
 text:setPos(0, -768 / 2 + 100)
+text:setColor(200, 200, 200, 200)
 layer:add(text)
