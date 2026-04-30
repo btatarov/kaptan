@@ -24,6 +24,7 @@ DrawShape :: struct {
     points:          [dynamic]linalg.Vector2f32,
     size:            linalg.Vector2f32,
     radius:          f32,
+    refs:            int,
     visible:         bool,
     is_gone:         bool,
 
@@ -40,8 +41,9 @@ InitDrawShape :: proc(shape: ^DrawShape, kind: DrawShapeKind) {
 
     InitTransform(&shape.transform)
 
-    shape.kind = kind
-    shape.points = make([dynamic]linalg.Vector2f32)
+    shape.kind    = kind
+    shape.points  = make([dynamic]linalg.Vector2f32)
+    shape.refs    = 0
     shape.visible = true
     shape.is_gone = false
 
@@ -49,7 +51,7 @@ InitDrawShape :: proc(shape: ^DrawShape, kind: DrawShapeKind) {
 }
 
 DestroyDrawShape :: proc(shape: ^DrawShape) {
-    if shape.is_gone {
+    if shape == nil {
         return
     }
 
@@ -57,6 +59,24 @@ DestroyDrawShape :: proc(shape: ^DrawShape) {
 
     delete(shape.points)
     shape.is_gone = true
+    free(shape)
+}
+
+DrawShapeAddRef :: proc(shape: ^DrawShape) {
+    shape.refs += 1
+}
+
+DrawShapeReleaseRef :: proc(shape: ^DrawShape) {
+    shape.refs -= 1
+
+    if shape.is_gone && shape.refs == 0 {
+        DestroyDrawShape(shape)
+    }
+}
+
+DrawShapeFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^DrawShape {
+    handle := (^^DrawShape)(lua.touserdata(L, idx))
+    return handle^
 }
 
 DrawLuaBind :: proc(L: ^lua.State) {
@@ -236,8 +256,10 @@ transform_point :: proc(shape: ^DrawShape, point: linalg.Vector2f32) -> rl.Vecto
 
 @(private="file")
 new_shape :: proc(L: ^lua.State, kind: DrawShapeKind) -> ^DrawShape {
-    shape := (^DrawShape)(lua.newuserdata(L, size_of(DrawShape)))
+    handle := (^^DrawShape)(lua.newuserdata(L, size_of(^DrawShape)))
+    shape := new(DrawShape)
     InitDrawShape(shape, kind)
+    handle^ = shape
 
     core.LuaBindClassMetatable(L, "KaptanDraw")
 
@@ -322,7 +344,7 @@ _new_polygon :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_piv :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(shape.pivot.x))
     lua.pushnumber(L, lua.Number(shape.pivot.y))
@@ -332,7 +354,7 @@ _get_piv :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_pos :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(shape.position.x))
     lua.pushnumber(L, lua.Number(shape.position.y))
@@ -342,7 +364,7 @@ _get_pos :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_rot :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(shape.rotation))
 
@@ -351,7 +373,7 @@ _get_rot :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_scl :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(shape.scale.x))
     lua.pushnumber(L, lua.Number(shape.scale.y))
@@ -361,7 +383,7 @@ _get_scl :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_visible :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     lua.pushboolean(L, b32(shape.visible))
 
@@ -370,7 +392,7 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     shape.pivot.x = f32(lua.tonumber(L, 2))
     shape.pivot.y = f32(lua.tonumber(L, 3))
@@ -380,7 +402,7 @@ _set_piv :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     shape.position.x = f32(lua.tonumber(L, 2))
     shape.position.y = f32(lua.tonumber(L, 3))
@@ -390,7 +412,7 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     shape.rotation = f32(lua.tonumber(L, 2))
 
@@ -399,7 +421,7 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_scl :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     shape.scale.x = f32(lua.tonumber(L, 2))
     shape.scale.y = f32(lua.tonumber(L, 3))
@@ -409,7 +431,7 @@ _set_scl :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_visible :: proc "c" (L: ^lua.State) -> i32 {
-    shape := (^DrawShape)(lua.touserdata(L, 1))
+    shape := DrawShapeFromLua(L, 1)
 
     shape.visible = bool(lua.toboolean(L, 2))
 
@@ -420,8 +442,15 @@ _set_visible :: proc "c" (L: ^lua.State) -> i32 {
 __gc :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    shape := (^DrawShape)(lua.touserdata(L, 1))
-    DestroyDrawShape(shape)
+    shape := DrawShapeFromLua(L, 1)
+
+    if ! shape.is_gone {
+        shape.is_gone = true
+
+        if shape.refs == 0 {
+            DestroyDrawShape(shape)
+        }
+    }
 
     return 0
 }

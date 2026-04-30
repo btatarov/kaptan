@@ -110,7 +110,8 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
         SpriteAddRef(sprite)
         append(&layer.items, RenderItem{kind = .Sprite, sprite = sprite})
     } else if core.LuaIsUserdataType(L, 2, "KaptanDrawMT") {
-        shape := (^DrawShape)(lua.touserdata(L, 2))
+        shape := DrawShapeFromLua(L, 2)
+        DrawShapeAddRef(shape)
         append(&layer.items, RenderItem{kind = .DrawShape, shape = shape})
     } else {
         log.errorf("KaptanLayer.add: argument 1 is not a KaptanSprite or KaptanDraw")
@@ -137,7 +138,7 @@ clear_items :: proc(layer: ^Layer) {
         case .Sprite:
             SpriteReleaseRef(item.sprite)
         case .DrawShape:
-            // DrawShape refs are handled when DrawShape gets the same ownership model.
+            DrawShapeReleaseRef(item.shape)
         }
     }
 
