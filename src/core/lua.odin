@@ -122,6 +122,21 @@ LuaBindSingleton :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) 
     lua.pop(L, 1)
 }
 
+LuaIsUserdataType :: proc(L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
+    if !lua.isuserdata(L, idx) {
+        return false
+    }
+
+    abs_idx := LuaGetAbsIndex(L, idx)
+    lua.getmetatable(L, abs_idx)
+    lua.L_getmetatable(L, metatable_name)
+
+    result := lua.rawequal(L, -1, -2)
+    lua.pop(L, 2)
+
+    return bool(result)
+}
+
 LuaGetField :: proc(L: ^lua.State, idx, key: i32) {
     abs_idx := LuaGetAbsIndex(L, idx)
 	lua.pushinteger(L, lua.Integer(key))
