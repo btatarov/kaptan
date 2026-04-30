@@ -68,10 +68,13 @@ LuaBindClassSimple :: proc(
     lua.pushstring(L, "__index")
     lua.pushvalue(L, index)
     lua.settable(L, -3)
+
+    lua.pop(L, 2)
 }
 
 LuaBindClassWithConstants :: proc(
-    L: ^lua.State, name: cstring,
+    L: ^lua.State,
+    name: cstring,
     reg_table: ^[]lua.L_Reg,
     constants: ^map[string]u32,
     destructor: proc "c" (L: ^lua.State) -> i32,
@@ -97,6 +100,8 @@ LuaBindClassWithConstants :: proc(
     lua.pushstring(L, "__index")
     lua.pushvalue(L, index)
     lua.settable(L, -3)
+
+    lua.pop(L, 2)
 }
 
 LuaBindClassMetatable :: proc(L: ^lua.State, name: cstring) {
@@ -111,6 +116,8 @@ LuaBindSingleton :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) 
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
     lua.L_setfuncs(L, raw_data(reg_table[:]), 0)
+
+    lua.pop(L, 1)
 }
 
 LuaGetField :: proc(L: ^lua.State, idx, key: i32) {
