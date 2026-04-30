@@ -25,11 +25,14 @@ InitRenderer :: proc() {
 DestroyRenderer :: proc() {
     log.debugf("KaptanRenderer: Destroy")
 
+    RendererClearLayers()
     DestroyTextureCache()
     delete(renderer.layer_list)
 }
 
 RendererDraw :: proc() {
+    remove_gone_layers()
+
     rl.BeginDrawing()
 
     rl.ClearBackground(renderer.clear_color)
@@ -63,6 +66,14 @@ RendererDraw :: proc() {
     rl.EndDrawing()
 }
 
+RendererClearLayers :: proc() {
+    for layer in renderer.layer_list {
+        LayerReleaseRef(layer)
+    }
+
+    clear(&renderer.layer_list)
+}
+
 RendererLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
         { "add",           _add },
@@ -80,11 +91,27 @@ RendererLuaUnbind :: proc(L: ^lua.State) {
 }
 
 @(private="file")
+remove_gone_layers :: proc() {
+    write := 0
+    for layer in renderer.layer_list {
+        if layer.is_gone {
+            LayerReleaseRef(layer)
+            continue
+        }
+
+        renderer.layer_list[write] = layer
+        write += 1
+    }
+
+    resize(&renderer.layer_list, write)
+}
+
+@(private="file")
 _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    // TODO: remove on __gc or __close?
-    layer := (^Layer)(lua.touserdata(L, -1))
+    layer := LayerFromLua(L, -1)
+    LayerAddRef(layer)
     append(&renderer.layer_list, layer)
 
     return 0
@@ -94,8 +121,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
 _clear :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    delete(renderer.layer_list)
-    renderer.layer_list = make([dynamic]^Layer)
+    RendererClearLayers()
 
     return 0
 }

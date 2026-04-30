@@ -19,6 +19,7 @@ RenderItem :: struct {
 
 Layer :: struct {
     items:   [dynamic]RenderItem,
+    refs:    int,
     visible: bool,
     is_gone: bool,
 }
@@ -27,16 +28,39 @@ InitLayer :: proc(layer: ^Layer) {
     log.debugf("KaptanLayer: Init")
 
     layer.items = make([dynamic]RenderItem)
+    layer.refs    = 0
     layer.visible = true
     layer.is_gone = false
 }
 
 DestroyLayer :: proc(layer: ^Layer) {
+    if layer == nil {
+        return
+    }
+
     log.debugf("KaptanLayer: Destroy")
 
     layer.is_gone = true
 
     delete(layer.items)
+    free(layer)
+}
+
+LayerAddRef :: proc(layer: ^Layer) {
+    layer.refs += 1
+}
+
+LayerReleaseRef :: proc(layer: ^Layer) {
+    layer.refs -= 1
+
+    if layer.is_gone && layer.refs == 0 {
+        DestroyLayer(layer)
+    }
+}
+
+LayerFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Layer {
+    handle := (^^Layer)(lua.touserdata(L, idx))
+    return handle^
 }
 
 LayerLuaBind :: proc(L: ^lua.State) {
@@ -64,8 +88,10 @@ LayerLuaUnbind :: proc(L: ^lua.State) {
 _new :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    layer := (^Layer)(lua.newuserdata(L, size_of(Layer)))
+    handle := (^^Layer)(lua.newuserdata(L, size_of(^Layer)))
+    layer := new(Layer)
     InitLayer(layer)
+    handle^ = layer
 
     core.LuaBindClassMetatable(L, "KaptanLayer")
 
@@ -76,7 +102,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    layer := (^Layer)(lua.touserdata(L, 1))
+    layer := LayerFromLua(L, 1)
 
     if core.LuaIsUserdataType(L, 2, "KaptanSpriteMT") {
         sprite := (^Sprite)(lua.touserdata(L, 2))
@@ -95,7 +121,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
 _clear :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    layer := (^Layer)(lua.touserdata(L, 1))
+    layer := LayerFromLua(L, 1)
 
     delete(layer.items)
     layer.items = make([dynamic]RenderItem)
@@ -105,7 +131,7 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_visible :: proc "c" (L: ^lua.State) -> i32 {
-    layer := (^Layer)(lua.touserdata(L, 1))
+    layer := LayerFromLua(L, 1)
 
     lua.pushboolean(L, b32(layer.visible))
 
@@ -114,7 +140,7 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_visible :: proc "c" (L: ^lua.State) -> i32 {
-    layer := (^Layer)(lua.touserdata(L, 1))
+    layer := LayerFromLua(L, 1)
     layer.visible = bool(lua.toboolean(L, 2))
 
     return 0
@@ -124,8 +150,15 @@ _set_visible :: proc "c" (L: ^lua.State) -> i32 {
 __gc :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    layer := (^Layer)(lua.touserdata(L, 1))
-    DestroyLayer(layer)
+    layer := LayerFromLua(L, 1)
+
+    if ! layer.is_gone {
+        layer.is_gone = true
+
+        if layer.refs == 0 {
+            DestroyLayer(layer)
+        }
+    }
 
     return 0
 }
