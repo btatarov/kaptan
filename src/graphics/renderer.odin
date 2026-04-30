@@ -45,6 +45,8 @@ RendererDraw :: proc() {
             switch item.kind {
             case .Sprite:
                 item.sprite->draw()
+            case .DrawShape:
+                item.shape->draw()
             }
         }
     }

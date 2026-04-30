@@ -41,7 +41,7 @@ List of available functions:
 * KaptanLayer.new()
 * KaptanLayer.isVisible()
 * KaptanLayer.setVisible(visible)
-* KaptanLayer.add(sprite)
+* KaptanLayer.add(sprite_or_shape)
 
 ### Sprite
 
@@ -57,3 +57,24 @@ List of available functions:
 * KaptanSprite.setRot(angle)
 * KaptanSprite.setScl(x, y)
 * KaptanSprite.setVisible(visible)
+
+### Draw
+
+* KaptanDraw.newPoint(x, y)
+* KaptanDraw.newLine(x1, y1, x2, y2)
+* KaptanDraw.newRect(x, y, width, height)
+* KaptanDraw.newCircle(x, y, radius)
+* KaptanDraw.newEllipse(x, y, radiusX, radiusY)
+* KaptanDraw.newPolygon(points)
+* KaptanDraw.getPiv()
+* KaptanDraw.getPos()
+* KaptanDraw.getRot()
+* KaptanDraw.getScl()
+* KaptanDraw.isVisible()
+* KaptanDraw.setPiv(x, y)
+* KaptanDraw.setPos(x, y)
+* KaptanDraw.setRot(angle)
+* KaptanDraw.setScl(x, y)
+* KaptanDraw.setVisible(visible)
+
+`KaptanDraw.newPolygon(points)` expects a flat point list: `{x1, y1, x2, y2, ...}`.

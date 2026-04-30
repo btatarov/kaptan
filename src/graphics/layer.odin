@@ -8,11 +8,13 @@ import "../core"
 
 RenderItemKind :: enum {
     Sprite,
+    DrawShape,
 }
 
 RenderItem :: struct {
     kind:   RenderItemKind,
     sprite: ^Sprite,
+    shape:  ^DrawShape,
 }
 
 Layer :: struct {
@@ -71,11 +73,34 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     layer := (^Layer)(lua.touserdata(L, 1))
-    sprite := (^Sprite)(lua.touserdata(L, 2))
 
-    append(&layer.items, RenderItem{kind = .Sprite, sprite = sprite})
+    if is_userdata_type(L, 2, "KaptanSpriteMT") {
+        sprite := (^Sprite)(lua.touserdata(L, 2))
+        append(&layer.items, RenderItem{kind = .Sprite, sprite = sprite})
+    } else if is_userdata_type(L, 2, "KaptanDrawMT") {
+        shape := (^DrawShape)(lua.touserdata(L, 2))
+        append(&layer.items, RenderItem{kind = .DrawShape, shape = shape})
+    } else {
+        log.errorf("KaptanLayer.add: argument 1 is not a KaptanSprite or KaptanDraw")
+    }
 
     return 0
+}
+
+@(private="file")
+is_userdata_type :: proc(L: ^lua.State, idx: i32, name: cstring) -> bool {
+    if !lua.isuserdata(L, idx) {
+        return false
+    }
+
+    abs_idx := core.LuaGetAbsIndex(L, idx)
+    lua.getmetatable(L, abs_idx)
+    lua.L_getmetatable(L, name)
+
+    result := lua.rawequal(L, -1, -2)
+    lua.pop(L, 2)
+
+    return bool(result)
 }
 
 @(private="file")
