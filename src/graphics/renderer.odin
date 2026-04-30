@@ -44,6 +44,8 @@ RendererDraw :: proc() {
             continue
         }
 
+        layer->remove_gone()
+
         for item in layer.items {
             switch item.kind {
             case .Sprite:

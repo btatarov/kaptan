@@ -22,6 +22,8 @@ Layer :: struct {
     refs:    int,
     visible: bool,
     is_gone: bool,
+
+    remove_gone: proc(layer: ^Layer),
 }
 
 InitLayer :: proc(layer: ^Layer) {
@@ -31,6 +33,8 @@ InitLayer :: proc(layer: ^Layer) {
     layer.refs    = 0
     layer.visible = true
     layer.is_gone = false
+
+    layer.remove_gone = layer_remove_gone
 }
 
 DestroyLayer :: proc(layer: ^Layer) {
@@ -86,6 +90,53 @@ LayerLuaUnbind :: proc(L: ^lua.State) {
 }
 
 @(private="file")
+layer_remove_gone :: proc(layer: ^Layer) {
+    write := 0
+    for item in layer.items {
+        if is_item_gone(item) {
+            release_item(item)
+            continue
+        }
+
+        layer.items[write] = item
+        write += 1
+    }
+
+    resize(&layer.items, write)
+}
+
+@(private="file")
+clear_items :: proc(layer: ^Layer) {
+    for item in layer.items {
+        release_item(item)
+    }
+
+    clear(&layer.items)
+}
+
+@(private="file")
+is_item_gone :: proc(item: RenderItem) -> bool {
+    switch item.kind {
+    case .Sprite:
+        return item.sprite.is_gone
+    case .DrawShape:
+        return item.shape.is_gone
+    }
+
+    return true
+}
+
+@(private="file")
+release_item :: proc(item: RenderItem) {
+    switch item.kind {
+    case .Sprite:
+        SpriteReleaseRef(item.sprite)
+    case .DrawShape:
+        DrawShapeReleaseRef(item.shape)
+    }
+}
+
+@(private="file")
 _new :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
@@ -129,20 +180,6 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
     clear_items(layer)
 
     return 0
-}
-
-@(private="file")
-clear_items :: proc(layer: ^Layer) {
-    for item in layer.items {
-        switch item.kind {
-        case .Sprite:
-            SpriteReleaseRef(item.sprite)
-        case .DrawShape:
-            DrawShapeReleaseRef(item.shape)
-        }
-    }
-
-    clear(&layer.items)
 }
 
 @(private="file")
