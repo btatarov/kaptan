@@ -62,9 +62,19 @@ List of available functions:
 ### Text
 
 * text = KaptanText.new(font_path, text, font_size)
+* text:getPiv()
+* text:getPos()
+* text:getRot()
+* text:getScl()
+* text:getSize()
+* text:isVisible()
 * text:setColor(r, g, b, a)
+* text:setPiv(x, y)
 * text:setPos(x, y)
+* text:setRot(angle)
+* text:setScl(scale)
 * text:setText(text)
+* text:setVisible(visible)
 
 ### Draw
 

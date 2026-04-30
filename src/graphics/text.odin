@@ -79,9 +79,19 @@ TextLuaBind :: proc(L: ^lua.State) {
     }
 
     @static instance_reg_table: []lua.L_Reg = {
-        { "setColor", _set_color },
-        { "setPos",   _set_pos },
-        { "setText",  _set_text },
+        { "getPiv",     _get_piv },
+        { "getPos",     _get_pos },
+        { "getRot",     _get_rot },
+        { "getScl",     _get_scl },
+        { "getSize",    _get_size },
+        { "isVisible",  _get_visible },
+        { "setColor",   _set_color },
+        { "setPiv",     _set_piv },
+        { "setPos",     _set_pos },
+        { "setRot",     _set_rot },
+        { "setScl",     _set_scl },
+        { "setText",    _set_text },
+        { "setVisible", _set_visible },
         { nil, nil },
     }
 
@@ -98,19 +108,24 @@ text_draw :: proc(text: ^Text) {
         return
     }
 
-    position := rl.Vector2{
-        text.position.x - text.size.x * 0.5,
-        text.position.y - text.size.y * 0.5,
+    scale := text.scale.x
+    position := rl.Vector2{text.position.x + text.pivot.x, text.position.y + text.pivot.y}
+    origin := rl.Vector2{
+        (text.size.x * 0.5 + text.pivot.x) * scale,
+        (text.size.y * 0.5 + text.pivot.y) * scale,
     }
+
+    // DrawTextPro only supports uniform scale via font size/spacing. Switch to
+    // drawing text through a texture with DrawTexturePro if scale_y is needed.
 
     rl.DrawTextPro(
         text.font.font,
         text.c_content,
         position,
-        rl.Vector2{0, 0},
-        0,
-        text.font_size,
-        text.spacing,
+        origin,
+        text.rotation,
+        text.font_size * scale,
+        text.spacing * scale,
         text.color,
     )
 }
@@ -145,11 +160,98 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_get_piv :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushnumber(L, lua.Number(text.pivot.x))
+    lua.pushnumber(L, lua.Number(text.pivot.y))
+
+    return 2
+}
+
+@(private="file")
+_get_pos :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushnumber(L, lua.Number(text.position.x))
+    lua.pushnumber(L, lua.Number(text.position.y))
+
+    return 2
+}
+
+@(private="file")
+_get_rot :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushnumber(L, lua.Number(text.rotation))
+
+    return 1
+}
+
+@(private="file")
+_get_scl :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushnumber(L, lua.Number(text.scale.x))
+
+    return 1
+}
+
+@(private="file")
+_get_size :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushnumber(L, lua.Number(text.size.x))
+    lua.pushnumber(L, lua.Number(text.size.y))
+
+    return 2
+}
+
+@(private="file")
+_get_visible :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    lua.pushboolean(L, b32(text.visible))
+
+    return 1
+}
+
+@(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
     text := TextFromLua(L, 1)
 
     text.position.x = f32(lua.tonumber(L, 2))
     text.position.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_piv :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    text.pivot.x = f32(lua.tonumber(L, 2))
+    text.pivot.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_rot :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    text.rotation = f32(lua.tonumber(L, 2))
+
+    return 0
+}
+
+@(private="file")
+_set_scl :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+    scale := f32(lua.tonumber(L, 2))
+
+    text.scale.x = scale
+    text.scale.y = scale
 
     return 0
 }
@@ -164,6 +266,15 @@ _set_color :: proc "c" (L: ^lua.State) -> i32 {
     a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
 
     text.color = rl.Color{r, g, b, a}
+
+    return 0
+}
+
+@(private="file")
+_set_visible :: proc "c" (L: ^lua.State) -> i32 {
+    text := TextFromLua(L, 1)
+
+    text.visible = bool(lua.toboolean(L, 2))
 
     return 0
 }
