@@ -7,9 +7,19 @@ KaptanRenderer.setClearColor(32, 32, 32, 255)
 local layer = KaptanLayer.new()
 KaptanRenderer.add(layer)
 
+local gui = KaptanLayer.new()
+gui:setCamAttached(false)
+KaptanRenderer.add(gui)
+
 local sprite = KaptanSprite.new('tests/sprites/kaptan1.png')
 sprite:setPos(-437, -334)
 layer:add(sprite)
+
+local text = KaptanText.new('tests/text/unitblock.ttf', 'Camera Test', 48)
+local w, h = text:getSize()
+text:setPos(0, 768 / 2 - 100)
+text:setPiv(w / 2, h / 2)
+gui:add(text)
 
 KaptanCamera.setPiv(0, 0)
 KaptanCamera.setPos(-437, -334)

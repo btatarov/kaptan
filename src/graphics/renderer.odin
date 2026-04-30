@@ -13,6 +13,12 @@ Renderer :: struct {
     layer_list:  [dynamic]^Layer,
 }
 
+RenderCameraMode :: enum {
+    None,
+    World,
+    Screen,
+}
+
 @(private="file") renderer: Renderer
 
 InitRenderer :: proc() {
@@ -39,11 +45,34 @@ RendererDraw :: proc() {
 
     rl.ClearBackground(renderer.clear_color)
 
-    rl.BeginMode2D(GetCamera()^)
+    active_mode := RenderCameraMode.None
 
     for layer in renderer.layer_list {
         if ! layer.visible || layer.is_gone {
             continue
+        }
+
+        desired_mode: RenderCameraMode
+        if layer.cam_attached {
+            desired_mode = .World
+        } else {
+            desired_mode = .Screen
+        }
+
+        if active_mode != desired_mode {
+            if active_mode != .None {
+                rl.EndMode2D()
+            }
+
+            switch desired_mode {
+            case .World:
+                rl.BeginMode2D(GetCamera()^)
+            case .Screen:
+                rl.BeginMode2D(GetScreenCamera()^)
+            case .None:
+            }
+
+            active_mode = desired_mode
         }
 
         layer->remove_gone()
@@ -60,7 +89,9 @@ RendererDraw :: proc() {
         }
     }
 
-    rl.EndMode2D()
+    if active_mode != .None {
+        rl.EndMode2D()
+    }
 
     // FPS counter
     when ODIN_DEBUG {

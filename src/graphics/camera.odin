@@ -14,6 +14,7 @@ Camera :: struct {
 }
 
 @(private="file") camera: Camera
+@(private="file") screen_camera: rl.Camera2D
 
 InitCamera :: proc() {
     log.debugf("KaptanCamera: Init")
@@ -40,6 +41,20 @@ GetCamera :: proc() -> ^rl.Camera2D {
     camera.raw.zoom = camera.zoom
 
     return &camera.raw
+}
+
+GetScreenCamera :: proc() -> ^rl.Camera2D {
+    screen_center := rl.Vector2{
+        f32(rl.GetScreenWidth()) * 0.5,
+        f32(rl.GetScreenHeight()) * 0.5,
+    }
+
+    screen_camera.offset = screen_center
+    screen_camera.target = rl.Vector2{0, 0}
+    screen_camera.rotation = 0
+    screen_camera.zoom = 1
+
+    return &screen_camera
 }
 
 CameraLuaBind :: proc(L: ^lua.State) {

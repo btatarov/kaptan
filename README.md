@@ -39,7 +39,9 @@ List of available functions:
 ### Layer
 
 * layer = KaptanLayer.new()
+* layer:isCamAttached()
 * layer:isVisible()
+* layer:setCamAttached(attached)
 * layer:setVisible(visible)
 * layer:add(sprite_or_shape_or_text)
 

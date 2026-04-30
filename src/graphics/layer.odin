@@ -21,10 +21,11 @@ RenderItem :: struct {
 }
 
 Layer :: struct {
-    items:   [dynamic]RenderItem,
-    refs:    int,
-    visible: bool,
-    is_gone: bool,
+    items:        [dynamic]RenderItem,
+    refs:         int,
+    visible:      bool,
+    cam_attached: bool,
+    is_gone:      bool,
 
     remove_gone: proc(layer: ^Layer),
 }
@@ -32,10 +33,11 @@ Layer :: struct {
 InitLayer :: proc(layer: ^Layer) {
     log.debugf("KaptanLayer: Init")
 
-    layer.items = make([dynamic]RenderItem)
-    layer.refs    = 0
-    layer.visible = true
-    layer.is_gone = false
+    layer.items        = make([dynamic]RenderItem)
+    layer.refs         = 0
+    layer.visible      = true
+    layer.cam_attached = true
+    layer.is_gone      = false
 
     layer.remove_gone = layer_remove_gone
 }
@@ -77,10 +79,12 @@ LayerLuaBind :: proc(L: ^lua.State) {
     }
 
     @static instance_reg_table: []lua.L_Reg = {
-        { "add",        _add },
-        { "clear",      _clear },
-        { "isVisible",  _get_visible },
-        { "setVisible", _set_visible },
+        { "add",            _add },
+        { "clear",          _clear },
+        { "isCamAttached",  _get_cam_attached },
+        { "isVisible",      _get_visible },
+        { "setCamAttached", _set_cam_attached },
+        { "setVisible",     _set_visible },
         { nil, nil },
     }
 
@@ -193,12 +197,29 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_get_cam_attached :: proc "c" (L: ^lua.State) -> i32 {
+    layer := LayerFromLua(L, 1)
+
+    lua.pushboolean(L, b32(layer.cam_attached))
+
+    return 1
+}
+
+@(private="file")
 _get_visible :: proc "c" (L: ^lua.State) -> i32 {
     layer := LayerFromLua(L, 1)
 
     lua.pushboolean(L, b32(layer.visible))
 
     return 1
+}
+
+@(private="file")
+_set_cam_attached :: proc "c" (L: ^lua.State) -> i32 {
+    layer := LayerFromLua(L, 1)
+    layer.cam_attached = bool(lua.toboolean(L, 2))
+
+    return 0
 }
 
 @(private="file")
