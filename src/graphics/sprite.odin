@@ -64,7 +64,7 @@ SpriteReleaseRef :: proc(sprite: ^Sprite) {
     }
 }
 
-SpriteFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Sprite {
+SpriteFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^Sprite {
     return (^Sprite)(core.LuaUserdataHandle(L, idx, "KaptanSpriteMT"))
 }
 

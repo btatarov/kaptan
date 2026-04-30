@@ -74,7 +74,7 @@ DrawShapeReleaseRef :: proc(shape: ^DrawShape) {
     }
 }
 
-DrawShapeFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^DrawShape {
+DrawShapeFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^DrawShape {
     return (^DrawShape)(core.LuaUserdataHandle(L, idx, "KaptanDrawMT"))
 }
 

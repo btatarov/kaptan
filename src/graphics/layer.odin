@@ -1,5 +1,6 @@
 package graphics
 
+import "core:c"
 import "core:log"
 
 import lua "vendor:lua/5.4"
@@ -63,7 +64,7 @@ LayerReleaseRef :: proc(layer: ^Layer) {
     }
 }
 
-LayerFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Layer {
+LayerFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^Layer {
     return (^Layer)(core.LuaUserdataHandle(L, idx, "KaptanLayerMT"))
 }
 
@@ -164,7 +165,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
         DrawShapeAddRef(shape)
         append(&layer.items, RenderItem{kind = .DrawShape, shape = shape})
     } else {
-        log.errorf("KaptanLayer.add: argument 1 is not a KaptanSprite or KaptanDraw")
+        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite or KaptanDraw expected"))
     }
 
     return 0

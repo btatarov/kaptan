@@ -138,11 +138,7 @@ LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name
 }
 
 LuaUserdataHandle :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> rawptr {
-    if !LuaIsUserdataType(L, idx, metatable_name) {
-        return nil
-    }
-
-    handle := (^rawptr)(lua.touserdata(L, idx))
+    handle := (^rawptr)(lua.L_checkudata(L, idx, metatable_name))
     return handle^
 }
 
