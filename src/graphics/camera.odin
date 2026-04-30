@@ -7,11 +7,18 @@ import rl "vendor:raylib"
 
 import "../core"
 
-@(private="file") camera: rl.Camera2D
+Camera :: struct {
+    using transform: Transform,
+    zoom:            f32,
+    raw:             rl.Camera2D,
+}
+
+@(private="file") camera: Camera
 
 InitCamera :: proc() {
     log.debugf("KaptanCamera: Init")
 
+    InitTransform(&camera.transform)
     camera.zoom = 1.0
 }
 
@@ -22,7 +29,17 @@ DestroyCamera :: proc() {
 }
 
 GetCamera :: proc() -> ^rl.Camera2D {
-    return &camera
+    screen_center := rl.Vector2{
+        f32(rl.GetScreenWidth()) * 0.5,
+        f32(rl.GetScreenHeight()) * 0.5,
+    }
+
+    camera.raw.offset = rl.Vector2{screen_center.x + camera.pivot.x, screen_center.y + camera.pivot.y}
+    camera.raw.target = rl.Vector2{camera.position.x, camera.position.y}
+    camera.raw.rotation = camera.rotation
+    camera.raw.zoom = camera.zoom
+
+    return &camera.raw
 }
 
 CameraLuaBind :: proc(L: ^lua.State) {
@@ -48,16 +65,16 @@ CameraLuaUnbind :: proc(L: ^lua.State) {
 
 @(private="file")
 _get_piv :: proc "c" (L: ^lua.State) -> i32 {
-    lua.pushnumber(L, lua.Number(camera.offset.x))
-    lua.pushnumber(L, lua.Number(camera.offset.y))
+    lua.pushnumber(L, lua.Number(camera.pivot.x))
+    lua.pushnumber(L, lua.Number(camera.pivot.y))
 
     return 2
 }
 
 @(private="file")
 _get_pos :: proc "c" (L: ^lua.State) -> i32 {
-    lua.pushnumber(L, lua.Number(camera.target.x))
-    lua.pushnumber(L, lua.Number(camera.target.y))
+    lua.pushnumber(L, lua.Number(camera.position.x))
+    lua.pushnumber(L, lua.Number(camera.position.y))
 
     return 2
 }
@@ -78,16 +95,16 @@ _get_zoom :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
-    camera.offset.x = f32(lua.tonumber(L, 1))
-    camera.offset.y = f32(lua.tonumber(L, 2))
+    camera.pivot.x = f32(lua.tonumber(L, 1))
+    camera.pivot.y = f32(lua.tonumber(L, 2))
 
     return 0
 }
 
 @(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
-    camera.target.x = f32(lua.tonumber(L, 1))
-    camera.target.y = f32(lua.tonumber(L, 2))
+    camera.position.x = f32(lua.tonumber(L, 1))
+    camera.position.y = f32(lua.tonumber(L, 2))
 
     return 0
 }

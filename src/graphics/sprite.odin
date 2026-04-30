@@ -79,11 +79,6 @@ sprite_draw :: proc(sprite: ^Sprite) {
         w := f32(sprite.width)
         h := f32(sprite.height)
 
-        screen_center := rl.Vector2{
-            f32(rl.GetScreenWidth()) * 0.5,
-            f32(rl.GetScreenHeight()) * 0.5,
-        }
-
         src := rl.Rectangle{
             0,
             0,
@@ -97,8 +92,8 @@ sprite_draw :: proc(sprite: ^Sprite) {
         }
 
         dst := rl.Rectangle{
-            screen_center.x + sprite.position.x + sprite.pivot.x,
-            screen_center.y + sprite.position.y + sprite.pivot.y,
+            sprite.position.x + sprite.pivot.x,
+            sprite.position.y + sprite.pivot.y,
             w * sprite.scale.x,
             h * sprite.scale.y,
         }

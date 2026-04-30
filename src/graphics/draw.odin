@@ -218,11 +218,6 @@ draw_polyline :: proc(shape: ^DrawShape, local_points: []linalg.Vector2f32, clos
 
 @(private="file")
 transform_point :: proc(shape: ^DrawShape, point: linalg.Vector2f32) -> rl.Vector2 {
-    screen_center := rl.Vector2{
-        f32(rl.GetScreenWidth()) * 0.5,
-        f32(rl.GetScreenHeight()) * 0.5,
-    }
-
     x := (point.x - shape.pivot.x) * shape.scale.x
     y := (point.y - shape.pivot.y) * shape.scale.y
     radians := math.to_radians(shape.rotation)
@@ -230,8 +225,8 @@ transform_point :: proc(shape: ^DrawShape, point: linalg.Vector2f32) -> rl.Vecto
     cos := math.cos(radians)
 
     return rl.Vector2{
-        screen_center.x + shape.position.x + shape.pivot.x + x * cos - y * sin,
-        screen_center.y + shape.position.y + shape.pivot.y + x * sin + y * cos,
+        shape.position.x + shape.pivot.x + x * cos - y * sin,
+        shape.position.y + shape.pivot.y + x * sin + y * cos,
     }
 }
 
