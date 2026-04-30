@@ -60,13 +60,17 @@ DestroyDrawShape :: proc(shape: ^DrawShape) {
 }
 
 DrawLuaBind :: proc(L: ^lua.State) {
-    @static reg_table: []lua.L_Reg = {
+    @static static_reg_table: []lua.L_Reg = {
         { "newPoint",   _new_point },
         { "newLine",    _new_line },
         { "newRect",    _new_rect },
         { "newCircle",  _new_circle },
         { "newEllipse", _new_ellipse },
         { "newPolygon", _new_polygon },
+        { nil, nil },
+    }
+
+    @static instance_reg_table: []lua.L_Reg = {
         { "getPiv",     _get_piv },
         { "getPos",     _get_pos },
         { "getRot",     _get_rot },
@@ -79,7 +83,7 @@ DrawLuaBind :: proc(L: ^lua.State) {
         { "setVisible", _set_visible },
         { nil, nil },
     }
-    core.LuaBindClass(L, "KaptanDraw", &reg_table, __gc)
+    core.LuaBindClass(L, "KaptanDraw", &static_reg_table, &instance_reg_table, __gc)
 }
 
 DrawLuaUnbind :: proc(L: ^lua.State) {

@@ -50,8 +50,12 @@ DestroySprite :: proc(sprite: ^Sprite) {
 }
 
 SpriteLuaBind :: proc(L: ^lua.State) {
-    @static reg_table: []lua.L_Reg = {
+    @static static_reg_table: []lua.L_Reg = {
         { "new",        _new },
+        { nil, nil },
+    }
+
+    @static instance_reg_table: []lua.L_Reg = {
         { "getPiv",     _get_piv },
         { "getPos",     _get_pos },
         { "getRot",     _get_rot },
@@ -65,7 +69,7 @@ SpriteLuaBind :: proc(L: ^lua.State) {
         { "setVisible", _set_visible },
         { nil, nil },
     }
-    core.LuaBindClass(L, "KaptanSprite", &reg_table, __gc)
+    core.LuaBindClass(L, "KaptanSprite", &static_reg_table, &instance_reg_table, __gc)
 }
 
 SpriteLuaUnbind :: proc(L: ^lua.State) {

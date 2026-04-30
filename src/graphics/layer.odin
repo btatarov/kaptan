@@ -40,8 +40,12 @@ DestroyLayer :: proc(layer: ^Layer) {
 }
 
 LayerLuaBind :: proc(L: ^lua.State) {
-    @static reg_table: []lua.L_Reg = {
+    @static static_reg_table: []lua.L_Reg = {
         { "new",        _new },
+        { nil, nil },
+    }
+
+    @static instance_reg_table: []lua.L_Reg = {
         { "add",        _add },
         { "clear",      _clear },
         { "isVisible",  _get_visible },
@@ -49,7 +53,7 @@ LayerLuaBind :: proc(L: ^lua.State) {
         { nil, nil },
     }
 
-    core.LuaBindClass(L, "KaptanLayer", &reg_table, __gc)
+    core.LuaBindClass(L, "KaptanLayer", &static_reg_table, &instance_reg_table, __gc)
 }
 
 LayerLuaUnbind :: proc(L: ^lua.State) {
