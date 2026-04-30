@@ -1,4 +1,4 @@
-KaptanWindow.open("Kaptan Draw", 1024, 768)
+KaptanWindow.open("Kaptan", 1024, 768)
 KaptanWindow.setVsync(false)
 KaptanWindow.setMaxFPS(120)
 
@@ -15,6 +15,9 @@ line:setPos(-220, -220)
 line:setRot(20)
 
 local rect = KaptanDraw.newRect(-60, -40, 120, 80)
+rect:setBorderColor(255, 0, 0, 255)
+rect:setBorderSize(5)
+rect:setColor(0, 255, 0, 255)
 rect:setPos(-250, 0)
 rect:setPiv(0, 0)
 rect:setRot(20)

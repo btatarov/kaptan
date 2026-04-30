@@ -24,6 +24,9 @@ DrawShape :: struct {
     points:          [dynamic]linalg.Vector2f32,
     size:            linalg.Vector2f32,
     radius:          f32,
+    color:           rl.Color,
+    border_color:    rl.Color,
+    border_size:     f32,
     refs:            int,
     visible:         bool,
     is_gone:         bool,
@@ -41,11 +44,14 @@ InitDrawShape :: proc(shape: ^DrawShape, kind: DrawShapeKind) {
 
     InitTransform(&shape.transform)
 
-    shape.kind    = kind
-    shape.points  = make([dynamic]linalg.Vector2f32)
-    shape.refs    = 0
-    shape.visible = true
-    shape.is_gone = false
+    shape.kind         = kind
+    shape.points       = make([dynamic]linalg.Vector2f32)
+    shape.color        = DRAW_FILL_COLOR
+    shape.border_color = DRAW_OUTLINE_COLOR
+    shape.border_size  = DRAW_THICKNESS
+    shape.refs         = 0
+    shape.visible      = true
+    shape.is_gone      = false
 
     shape.draw = draw_shape
 }
@@ -90,16 +96,19 @@ DrawLuaBind :: proc(L: ^lua.State) {
     }
 
     @static instance_reg_table: []lua.L_Reg = {
-        { "getPiv",     _get_piv },
-        { "getPos",     _get_pos },
-        { "getRot",     _get_rot },
-        { "getScl",     _get_scl },
-        { "isVisible",  _get_visible },
-        { "setPiv",     _set_piv },
-        { "setPos",     _set_pos },
-        { "setRot",     _set_rot },
-        { "setScl",     _set_scl },
-        { "setVisible", _set_visible },
+        { "getPiv",         _get_piv },
+        { "getPos",         _get_pos },
+        { "getRot",         _get_rot },
+        { "getScl",         _get_scl },
+        { "isVisible",      _get_visible },
+        { "setBorderColor", _set_border_color },
+        { "setBorderSize",  _set_border_size },
+        { "setColor",       _set_color },
+        { "setPiv",         _set_piv },
+        { "setPos",         _set_pos },
+        { "setRot",         _set_rot },
+        { "setScl",         _set_scl },
+        { "setVisible",     _set_visible },
         { nil, nil },
     }
     core.LuaBindClass(L, "KaptanDraw", &static_reg_table, &instance_reg_table, __gc)
@@ -138,8 +147,8 @@ draw_point :: proc(shape: ^DrawShape) {
     }
 
     p := transform_point(shape, shape.points[0])
-    rl.DrawCircleV(p, DRAW_THICKNESS, DRAW_FILL_COLOR)
-    rl.DrawCircleLinesV(p, DRAW_THICKNESS, DRAW_OUTLINE_COLOR)
+    rl.DrawCircleV(p, shape.border_size, shape.color)
+    rl.DrawCircleLinesV(p, shape.border_size, shape.border_color)
 }
 
 @(private="file")
@@ -150,7 +159,7 @@ draw_line :: proc(shape: ^DrawShape) {
 
     a := transform_point(shape, shape.points[0])
     b := transform_point(shape, shape.points[1])
-    rl.DrawLineEx(a, b, DRAW_THICKNESS, DRAW_OUTLINE_COLOR)
+    rl.DrawLineEx(a, b, shape.border_size, shape.border_color)
 }
 
 @(private="file")
@@ -226,16 +235,16 @@ draw_polyline :: proc(shape: ^DrawShape, local_points: []linalg.Vector2f32, clos
 
     if closed && len(points) >= 3 {
         for i in 1..<len(points) - 1 {
-            rl.DrawTriangle(points[0], points[i + 1], points[i], DRAW_FILL_COLOR)
+            rl.DrawTriangle(points[0], points[i + 1], points[i], shape.color)
         }
     }
 
     for i in 0..<len(points) - 1 {
-        rl.DrawLineEx(points[i], points[i + 1], DRAW_THICKNESS, DRAW_OUTLINE_COLOR)
+        rl.DrawLineEx(points[i], points[i + 1], shape.border_size, shape.border_color)
     }
 
     if closed {
-        rl.DrawLineEx(points[len(points) - 1], points[0], DRAW_THICKNESS, DRAW_OUTLINE_COLOR)
+        rl.DrawLineEx(points[len(points) - 1], points[0], shape.border_size, shape.border_color)
     }
 }
 
@@ -387,6 +396,43 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(shape.visible))
 
     return 1
+}
+
+@(private="file")
+_set_border_color :: proc "c" (L: ^lua.State) -> i32 {
+    shape := DrawShapeFromLua(L, 1)
+
+    r := u8(clamp(int(lua.L_checkinteger(L, 2)), 0, 255))
+    g := u8(clamp(int(lua.L_checkinteger(L, 3)), 0, 255))
+    b := u8(clamp(int(lua.L_checkinteger(L, 4)), 0, 255))
+    a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
+
+    shape.border_color = rl.Color{r, g, b, a}
+
+    return 0
+}
+
+@(private="file")
+_set_border_size :: proc "c" (L: ^lua.State) -> i32 {
+    shape := DrawShapeFromLua(L, 1)
+
+    shape.border_size = max(f32(lua.L_checknumber(L, 2)), 0)
+
+    return 0
+}
+
+@(private="file")
+_set_color :: proc "c" (L: ^lua.State) -> i32 {
+    shape := DrawShapeFromLua(L, 1)
+
+    r := u8(clamp(int(lua.L_checkinteger(L, 2)), 0, 255))
+    g := u8(clamp(int(lua.L_checkinteger(L, 3)), 0, 255))
+    b := u8(clamp(int(lua.L_checkinteger(L, 4)), 0, 255))
+    a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
+
+    shape.color = rl.Color{r, g, b, a}
+
+    return 0
 }
 
 @(private="file")
