@@ -20,12 +20,14 @@ InitRenderer :: proc() {
 
     renderer.layer_list = make([dynamic]^Layer)
     InitTextureCache()
+    InitFontCache()
 }
 
 DestroyRenderer :: proc() {
     log.debugf("KaptanRenderer: Destroy")
 
     RendererClearLayers()
+    DestroyFontCache()
     DestroyTextureCache()
     delete(renderer.layer_list)
 }
@@ -52,6 +54,8 @@ RendererDraw :: proc() {
                 item.sprite->draw()
             case .DrawShape:
                 item.shape->draw()
+            case .Text:
+                item.text->draw()
             }
         }
     }

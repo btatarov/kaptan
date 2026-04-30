@@ -41,7 +41,7 @@ List of available functions:
 * layer = KaptanLayer.new()
 * layer:isVisible()
 * layer:setVisible(visible)
-* layer:add(sprite_or_shape)
+* layer:add(sprite_or_shape_or_text)
 
 ### Sprite
 
@@ -58,6 +58,12 @@ List of available functions:
 * sprite:setRot(angle)
 * sprite:setScl(x, y)
 * sprite:setVisible(visible)
+
+### Text
+
+* text = KaptanText.new(font_path, text, font_size)
+* text:setPos(x, y)
+* text:setText(text)
 
 ### Draw
 

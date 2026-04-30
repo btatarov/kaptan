@@ -10,12 +10,14 @@ import "../core"
 RenderItemKind :: enum {
     Sprite,
     DrawShape,
+    Text,
 }
 
 RenderItem :: struct {
     kind:   RenderItemKind,
     sprite: ^Sprite,
     shape:  ^DrawShape,
+    text:   ^Text,
 }
 
 Layer :: struct {
@@ -121,6 +123,8 @@ is_item_gone :: proc(item: RenderItem) -> bool {
         return item.sprite.is_gone
     case .DrawShape:
         return item.shape.is_gone
+    case .Text:
+        return item.text.is_gone
     }
 
     return true
@@ -133,6 +137,8 @@ release_item :: proc(item: RenderItem) {
         SpriteReleaseRef(item.sprite)
     case .DrawShape:
         DrawShapeReleaseRef(item.shape)
+    case .Text:
+        TextReleaseRef(item.text)
     }
 }
 
@@ -164,8 +170,12 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
         shape := DrawShapeFromLua(L, 2)
         DrawShapeAddRef(shape)
         append(&layer.items, RenderItem{kind = .DrawShape, shape = shape})
+    } else if core.LuaIsUserdataType(L, 2, "KaptanTextMT") {
+        text := TextFromLua(L, 2)
+        TextAddRef(text)
+        append(&layer.items, RenderItem{kind = .Text, text = text})
     } else {
-        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite or KaptanDraw expected"))
+        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, or KaptanText expected"))
     }
 
     return 0
