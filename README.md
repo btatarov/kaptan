@@ -52,6 +52,7 @@ List of available functions:
 * sprite:getScl()
 * sprite:getSize()
 * sprite:isVisible()
+* sprite:setColor(r, g, b, a)
 * sprite:setPiv(x, y)
 * sprite:setPos(x, y)
 * sprite:setRot(angle)

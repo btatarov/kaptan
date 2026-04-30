@@ -12,6 +12,7 @@ Sprite :: struct {
     texture:         ^Texture,
     width:           i32,
     height:          i32,
+    color:           rl.Color,
     refs:            int,
     visible:         bool,
     is_gone:         bool,
@@ -29,6 +30,7 @@ InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
     sprite.texture = texture
     sprite.width   = texture.tex.width
     sprite.height  = texture.tex.height
+    sprite.color   = rl.WHITE
     sprite.refs    = 0
     sprite.visible = true
     sprite.is_gone = false
@@ -81,6 +83,7 @@ SpriteLuaBind :: proc(L: ^lua.State) {
         { "getScl",     _get_scl },
         { "getSize",    _get_size },
         { "isVisible",  _get_visible },
+        { "setColor",   _set_color },
         { "setPiv",     _set_piv },
         { "setPos",     _set_pos },
         { "setRot",     _set_rot },
@@ -126,7 +129,7 @@ sprite_draw :: proc(sprite: ^Sprite) {
             dst,
             origin,
             sprite.rotation,
-            rl.WHITE,
+            sprite.color,
         )
     }
 }
@@ -204,6 +207,20 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(sprite.visible))
 
     return 1
+}
+
+@(private="file")
+_set_color :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+
+    r := u8(clamp(int(lua.L_checkinteger(L, 2)), 0, 255))
+    g := u8(clamp(int(lua.L_checkinteger(L, 3)), 0, 255))
+    b := u8(clamp(int(lua.L_checkinteger(L, 4)), 0, 255))
+    a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
+
+    sprite.color = rl.Color{r, g, b, a}
+
+    return 0
 }
 
 @(private="file")
