@@ -1,7 +1,6 @@
 package graphics
 
 import "core:log"
-import "core:strings"
 
 import lua "vendor:lua/5.4"
 import rl "vendor:raylib"
@@ -116,7 +115,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     sprite := (^Sprite)(lua.newuserdata(L, size_of(Sprite)))
     path := lua.L_checkstring(L, 1)
 
-    texture := TextureInit(strings.clone_from_cstring(path))
+    texture := TextureInit(path)
     InitSprite(sprite, texture)
 
     core.LuaBindClassMetatable(L, "KaptanSprite")

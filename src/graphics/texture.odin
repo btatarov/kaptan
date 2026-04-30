@@ -1,7 +1,6 @@
 package graphics
 
 import "core:log"
-import "core:strings"
 
 import rl "vendor:raylib"
 
@@ -13,7 +12,9 @@ Texture :: struct {
 
 @(private="file") texture_cache: map[string]Texture
 
-TextureInit :: proc(path: string) -> ^Texture {
+TextureInit :: proc(cpath: cstring) -> ^Texture {
+    path := string(cpath)
+
     if path in texture_cache {
         tex := &texture_cache[path]
         tex.ref_count += 1
@@ -22,7 +23,7 @@ TextureInit :: proc(path: string) -> ^Texture {
 
     log.debugf("Load texture: %s", path)
 
-    texture := rl.LoadTexture(strings.clone_to_cstring(path, context.temp_allocator))
+    texture := rl.LoadTexture(cpath)
     texture_cache[path] = Texture{tex = texture, ref_count = 1}
     return &texture_cache[path]
 }
