@@ -6,8 +6,17 @@ import lua "vendor:lua/5.4"
 
 import "../core"
 
+RenderItemKind :: enum {
+    Sprite,
+}
+
+RenderItem :: struct {
+    kind:   RenderItemKind,
+    sprite: ^Sprite,
+}
+
 Layer :: struct {
-    sprites: [dynamic]^Sprite,
+    items:   [dynamic]RenderItem,
     visible: bool,
     is_gone: bool,
 }
@@ -15,7 +24,7 @@ Layer :: struct {
 InitLayer :: proc(layer: ^Layer) {
     log.debugf("KaptanLayer: Init")
 
-    layer.sprites = make([dynamic]^Sprite)
+    layer.items = make([dynamic]RenderItem)
     layer.visible = true
     layer.is_gone = false
 }
@@ -25,7 +34,7 @@ DestroyLayer :: proc(layer: ^Layer) {
 
     layer.is_gone = true
 
-    delete(layer.sprites)
+    delete(layer.items)
 }
 
 LayerLuaBind :: proc(L: ^lua.State) {
@@ -64,7 +73,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
     layer := (^Layer)(lua.touserdata(L, 1))
     sprite := (^Sprite)(lua.touserdata(L, 2))
 
-    append(&layer.sprites, sprite)
+    append(&layer.items, RenderItem{kind = .Sprite, sprite = sprite})
 
     return 0
 }
@@ -75,8 +84,8 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
     layer := (^Layer)(lua.touserdata(L, 1))
 
-    delete(layer.sprites)
-    layer.sprites = make([dynamic]^Sprite)
+    delete(layer.items)
+    layer.items = make([dynamic]RenderItem)
 
     return 0
 }

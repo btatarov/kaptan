@@ -41,8 +41,11 @@ RendererDraw :: proc() {
             continue
         }
 
-        for sprite in layer.sprites {
-            sprite->draw()
+        for item in layer.items {
+            switch item.kind {
+            case .Sprite:
+                item.sprite->draw()
+            }
         }
     }
 
