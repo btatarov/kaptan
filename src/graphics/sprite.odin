@@ -12,6 +12,7 @@ Sprite :: struct {
     texture:         ^Texture,
     width:           i32,
     height:          i32,
+    refs:            int,
     visible:         bool,
     is_gone:         bool,
 
@@ -28,6 +29,7 @@ InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
     sprite.texture = texture
     sprite.width   = texture.tex.width
     sprite.height  = texture.tex.height
+    sprite.refs    = 0
     sprite.visible = true
     sprite.is_gone = false
 
@@ -37,7 +39,7 @@ InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
 }
 
 DestroySprite :: proc(sprite: ^Sprite) {
-    if sprite.is_gone {
+    if sprite == nil {
         return
     }
 
@@ -47,6 +49,24 @@ DestroySprite :: proc(sprite: ^Sprite) {
 
     sprite.is_gone = true
     sprite_count -= 1
+    free(sprite)
+}
+
+SpriteAddRef :: proc(sprite: ^Sprite) {
+    sprite.refs += 1
+}
+
+SpriteReleaseRef :: proc(sprite: ^Sprite) {
+    sprite.refs -= 1
+
+    if sprite.is_gone && sprite.refs == 0 {
+        DestroySprite(sprite)
+    }
+}
+
+SpriteFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Sprite {
+    handle := (^^Sprite)(lua.touserdata(L, idx))
+    return handle^
 }
 
 SpriteLuaBind :: proc(L: ^lua.State) {
@@ -116,11 +136,13 @@ sprite_draw :: proc(sprite: ^Sprite) {
 _new :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    sprite := (^Sprite)(lua.newuserdata(L, size_of(Sprite)))
+    handle := (^^Sprite)(lua.newuserdata(L, size_of(^Sprite)))
     path := lua.L_checkstring(L, 1)
 
+    sprite := new(Sprite)
     texture := TextureInit(path)
     InitSprite(sprite, texture)
+    handle^ = sprite
 
     core.LuaBindClassMetatable(L, "KaptanSprite")
 
@@ -129,7 +151,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_piv :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(sprite.pivot.x))
     lua.pushnumber(L, lua.Number(sprite.pivot.y))
@@ -139,7 +161,7 @@ _get_piv :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_pos :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(sprite.position.x))
     lua.pushnumber(L, lua.Number(sprite.position.y))
@@ -149,7 +171,7 @@ _get_pos :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_rot :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(sprite.rotation))
 
@@ -158,7 +180,7 @@ _get_rot :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_scl :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(sprite.scale.x))
     lua.pushnumber(L, lua.Number(sprite.scale.y))
@@ -168,7 +190,7 @@ _get_scl :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_size :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushnumber(L, lua.Number(sprite.width))
     lua.pushnumber(L, lua.Number(sprite.height))
@@ -178,7 +200,7 @@ _get_size :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _get_visible :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     lua.pushboolean(L, b32(sprite.visible))
 
@@ -187,7 +209,7 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     sprite.pivot.x = f32(lua.tonumber(L, 2))
     sprite.pivot.y = f32(lua.tonumber(L, 3))
@@ -197,7 +219,7 @@ _set_piv :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     sprite.position.x = f32(lua.tonumber(L, 2))
     sprite.position.y = f32(lua.tonumber(L, 3))
@@ -207,7 +229,7 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     sprite.rotation = f32(lua.tonumber(L, 2))
 
@@ -216,7 +238,7 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_scl :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     sprite.scale.x = f32(lua.tonumber(L, 2))
     sprite.scale.y = f32(lua.tonumber(L, 3))
@@ -226,7 +248,7 @@ _set_scl :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_visible :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := (^Sprite)(lua.touserdata(L, 1))
+    sprite := SpriteFromLua(L, 1)
 
     sprite.visible = bool(lua.toboolean(L, 2))
 
@@ -237,8 +259,15 @@ _set_visible :: proc "c" (L: ^lua.State) -> i32 {
 __gc :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    sprite := (^Sprite)(lua.touserdata(L, -1))
-    DestroySprite(sprite)
+    sprite := SpriteFromLua(L, 1)
+
+    if ! sprite.is_gone {
+        sprite.is_gone = true
+
+        if sprite.refs == 0 {
+            DestroySprite(sprite)
+        }
+    }
 
     return 0
 }

@@ -11,13 +11,13 @@ Texture :: struct {
     ref_count:  i32,
 }
 
-@(private="file") texture_cache: map[string]Texture
+@(private="file") texture_cache: map[string]^Texture
 
 TextureInit :: proc(cpath: cstring) -> ^Texture {
     path := string(cpath)
 
     if path in texture_cache {
-        tex := &texture_cache[path]
+        tex := texture_cache[path]
         tex.ref_count += 1
         return tex
     }
@@ -26,8 +26,10 @@ TextureInit :: proc(cpath: cstring) -> ^Texture {
 
     texture := rl.LoadTexture(cpath)
     identifier := strings.clone(path)
-    texture_cache[identifier] = Texture{tex = texture, identifier = identifier, ref_count = 1}
-    return &texture_cache[identifier]
+    tex := new(Texture)
+    tex^ = Texture{tex = texture, identifier = identifier, ref_count = 1}
+    texture_cache[identifier] = tex
+    return tex
 }
 
 TextureDestroy :: proc(tex: ^Texture) {
@@ -44,23 +46,25 @@ TextureDestroy :: proc(tex: ^Texture) {
         rl.UnloadTexture(tex.tex)
         delete_key(&texture_cache, identifier)
         delete(identifier)
+        free(tex)
     }
 }
 
 InitTextureCache :: proc() {
     log.debugf("Init texture cache")
 
-    texture_cache = make(map[string]Texture)
+    texture_cache = make(map[string]^Texture)
 }
 
 DestroyTextureCache :: proc() {
     log.debugf("Destroy texture cache")
 
-    for _, &texture in texture_cache {
+    for _, texture in texture_cache {
         log.debugf("Unload texture: %s", texture.identifier)
 
         rl.UnloadTexture(texture.tex)
         delete(texture.identifier)
+        free(texture)
     }
 
     delete(texture_cache)

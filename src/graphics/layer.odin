@@ -42,6 +42,7 @@ DestroyLayer :: proc(layer: ^Layer) {
 
     layer.is_gone = true
 
+    clear_items(layer)
     delete(layer.items)
     free(layer)
 }
@@ -105,7 +106,8 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
     layer := LayerFromLua(L, 1)
 
     if core.LuaIsUserdataType(L, 2, "KaptanSpriteMT") {
-        sprite := (^Sprite)(lua.touserdata(L, 2))
+        sprite := SpriteFromLua(L, 2)
+        SpriteAddRef(sprite)
         append(&layer.items, RenderItem{kind = .Sprite, sprite = sprite})
     } else if core.LuaIsUserdataType(L, 2, "KaptanDrawMT") {
         shape := (^DrawShape)(lua.touserdata(L, 2))
@@ -123,10 +125,23 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
     layer := LayerFromLua(L, 1)
 
-    delete(layer.items)
-    layer.items = make([dynamic]RenderItem)
+    clear_items(layer)
 
     return 0
+}
+
+@(private="file")
+clear_items :: proc(layer: ^Layer) {
+    for item in layer.items {
+        switch item.kind {
+        case .Sprite:
+            SpriteReleaseRef(item.sprite)
+        case .DrawShape:
+            // DrawShape refs are handled when DrawShape gets the same ownership model.
+        }
+    }
+
+    clear(&layer.items)
 }
 
 @(private="file")
