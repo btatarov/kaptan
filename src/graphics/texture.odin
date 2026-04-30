@@ -1,6 +1,7 @@
 package graphics
 
 import "core:log"
+import "core:strings"
 
 import rl "vendor:raylib"
 
@@ -24,8 +25,9 @@ TextureInit :: proc(cpath: cstring) -> ^Texture {
     log.debugf("Load texture: %s", path)
 
     texture := rl.LoadTexture(cpath)
-    texture_cache[path] = Texture{tex = texture, ref_count = 1}
-    return &texture_cache[path]
+    identifier := strings.clone(path)
+    texture_cache[identifier] = Texture{tex = texture, identifier = identifier, ref_count = 1}
+    return &texture_cache[identifier]
 }
 
 TextureDestroy :: proc(tex: ^Texture) {
@@ -33,14 +35,15 @@ TextureDestroy :: proc(tex: ^Texture) {
         return
     }
 
-    texture := texture_cache[tex.identifier]
-    texture.ref_count -= 1
+    tex.ref_count -= 1
 
     if tex.ref_count == 0 {
         log.debugf("Unload texture: %s", tex.identifier)
 
-        delete_key(&texture_cache, tex.identifier)
-        rl.UnloadTexture(texture.tex)
+        identifier := tex.identifier
+        rl.UnloadTexture(tex.tex)
+        delete_key(&texture_cache, identifier)
+        delete(identifier)
     }
 }
 
@@ -54,9 +57,10 @@ DestroyTextureCache :: proc() {
     log.debugf("Destroy texture cache")
 
     for _, &texture in texture_cache {
-        if texture.ref_count > 0 {
-            TextureDestroy(&texture)
-        }
+        log.debugf("Unload texture: %s", texture.identifier)
+
+        rl.UnloadTexture(texture.tex)
+        delete(texture.identifier)
     }
 
     delete(texture_cache)

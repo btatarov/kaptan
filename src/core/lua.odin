@@ -47,7 +47,8 @@ LuaRun :: proc(L: ^lua.State, args: []string) -> bool {
 LuaBindClass :: proc { LuaBindClassSimple, LuaBindClassWithConstants }
 
 LuaBindClassSimple :: proc(
-    L: ^lua.State, name: cstring,
+    L: ^lua.State,
+    name: cstring,
     reg_table: ^[]lua.L_Reg,
     destructor: proc "c" (L: ^lua.State) -> i32,
 ) {

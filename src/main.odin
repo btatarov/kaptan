@@ -31,7 +31,6 @@ main :: proc() {
     }
 
     L := core.InitLuaState()
-    defer core.DestroyLuaState(L)
 
     graphics.WindowLuaBind(L)
     graphics.RendererLuaBind(L)
@@ -47,6 +46,8 @@ main :: proc() {
         graphics.RendererLuaUnbind(L)
         graphics.WindowLuaUnbind(L)
     }
+
+    defer core.DestroyLuaState(L)
 
     if len(os.args) > 1 {
         log.debug("Running lua with argument:", os.args[1])
