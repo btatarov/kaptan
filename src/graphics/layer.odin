@@ -64,8 +64,7 @@ LayerReleaseRef :: proc(layer: ^Layer) {
 }
 
 LayerFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Layer {
-    handle := (^^Layer)(lua.touserdata(L, idx))
-    return handle^
+    return (^Layer)(core.LuaUserdataHandle(L, idx, "KaptanLayerMT"))
 }
 
 LayerLuaBind :: proc(L: ^lua.State) {

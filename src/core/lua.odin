@@ -122,7 +122,7 @@ LuaBindSingleton :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) 
     lua.pop(L, 1)
 }
 
-LuaIsUserdataType :: proc(L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
+LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
     if !lua.isuserdata(L, idx) {
         return false
     }
@@ -137,20 +137,29 @@ LuaIsUserdataType :: proc(L: ^lua.State, idx: i32, metatable_name: cstring) -> b
     return bool(result)
 }
 
-LuaGetField :: proc(L: ^lua.State, idx, key: i32) {
+LuaUserdataHandle :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> rawptr {
+    if !LuaIsUserdataType(L, idx, metatable_name) {
+        return nil
+    }
+
+    handle := (^rawptr)(lua.touserdata(L, idx))
+    return handle^
+}
+
+LuaGetField :: proc "contextless" (L: ^lua.State, idx, key: i32) {
     abs_idx := LuaGetAbsIndex(L, idx)
 	lua.pushinteger(L, lua.Integer(key))
 	lua.gettable(L, abs_idx)
 }
 
-LuaGetAbsIndex :: proc(L: ^lua.State, idx: i32) -> i32 {
+LuaGetAbsIndex :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     if idx < 0 {
         return lua.gettop(L) + idx + 1
     }
     return idx
 }
 
-LuaPushTableItr :: proc(L: ^lua.State, idx: i32) -> i32 {
+LuaPushTableItr :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     itr := LuaGetAbsIndex(L, idx)
 	lua.pushnil(L)
 	lua.pushnil(L)
@@ -158,7 +167,7 @@ LuaPushTableItr :: proc(L: ^lua.State, idx: i32) -> i32 {
 	return itr
 }
 
-LuaTableItrNext :: proc(L: ^lua.State, itr: i32) -> bool {
+LuaTableItrNext :: proc "contextless" (L: ^lua.State, itr: i32) -> bool {
     lua.pop(L, 2)  // pop the prev key/value; leave the key
     if lua.next(L, itr) != 0 {
 		LuaCopyToTop(L, -2)
@@ -168,11 +177,11 @@ LuaTableItrNext :: proc(L: ^lua.State, itr: i32) -> bool {
 	return false
 }
 
-LuaCopyToTop :: proc(L: ^lua.State, idx: i32) {
+LuaCopyToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
     lua.pushvalue(L, idx)
 }
 
-LuaMoveToTop :: proc(L: ^lua.State, idx: i32) {
+LuaMoveToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
     abs_idx := LuaGetAbsIndex(L, idx)
     lua.pushvalue(L, abs_idx)
 	lua.remove(L, abs_idx)

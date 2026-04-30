@@ -65,8 +65,7 @@ SpriteReleaseRef :: proc(sprite: ^Sprite) {
 }
 
 SpriteFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^Sprite {
-    handle := (^^Sprite)(lua.touserdata(L, idx))
-    return handle^
+    return (^Sprite)(core.LuaUserdataHandle(L, idx, "KaptanSpriteMT"))
 }
 
 SpriteLuaBind :: proc(L: ^lua.State) {

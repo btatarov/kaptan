@@ -75,8 +75,7 @@ DrawShapeReleaseRef :: proc(shape: ^DrawShape) {
 }
 
 DrawShapeFromLua :: proc "c" (L: ^lua.State, idx: i32) -> ^DrawShape {
-    handle := (^^DrawShape)(lua.touserdata(L, idx))
-    return handle^
+    return (^DrawShape)(core.LuaUserdataHandle(L, idx, "KaptanDrawMT"))
 }
 
 DrawLuaBind :: proc(L: ^lua.State) {
