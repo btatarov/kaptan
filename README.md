@@ -289,13 +289,13 @@ Kaptan objects are split between Lua handles and Odin-owned runtime objects.
 
 When Lua creates a layer, sprite, draw shape, or text object, Lua receives userdata that stores a handle to an Odin object. The Odin object owns the actual runtime state, GPU/cache references, transform data, and render behavior.
 
-Engine containers can also hold references. A layer keeps references to sprites, shapes, and text objects added with `layer:add(...)`. The renderer keeps references to layers added with `KaptanRenderer.add(layer)`.
+Engine containers can also hold references. A layer keeps references to sprites, shapes, and text objects added with `layer:add(...)`. The renderer keeps references to layers added with `KaptanRenderer.add(layer)`. The audio system keeps references to channels added with `KaptanAudioSystem.add(channel)`.
 
 The important fields behind the scenes are `refs` and `is_gone`.
 
 `refs` tracks engine references that are keeping an Odin object alive. `is_gone` marks an object for removal from render lists after Lua has dropped its handle.
 
-These solve different problems. Ref counts prevent use-after-free while a layer or renderer still references an object. The gone flag lets Lua garbage collection request removal from renderer/layer lists without freeing an object that is still referenced by the engine.
+These solve different problems. Ref counts prevent use-after-free while a layer, renderer, or audio system still references an object. The gone flag lets Lua garbage collection request removal from engine lists without freeing an object that is still referenced by the engine.
 
 ### Lua Handles And Engine References
 
@@ -550,6 +550,8 @@ Load audio once, then play by name. Avoid loading files every time an effect pla
 Use a few sound channels for categories such as combat, UI, and ambience. Use music channels for streamed tracks.
 
 Register music channels with `KaptanAudioSystem.add(channel)` so streaming updates happen automatically.
+
+Use `KaptanAudioSystem.remove(channel)` when one channel should stop being owned and updated by the audio system.
 
 Use `KaptanAudioSystem.clear()` to release all registered channels when changing scenes or resetting audio state:
 
