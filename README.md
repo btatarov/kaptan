@@ -196,6 +196,10 @@ Rotation happens around the pivot. Use `setPiv` before `setRot` when you need a 
 
 Sprites can render a trimmed source rectangle from a larger texture atlas while keeping logical frame size and pivot behavior from the original untrimmed sprite.
 
+Kaptan includes a TexturePacker custom exporter in `extra/TexturePacker/kaptan`. See the TexturePacker custom exporter documentation for installation and usage details: <https://www.codeandweb.com/texturepacker/documentation/custom-exporter>.
+
+The included exporter emits a `.lua` file using the format below and disables rotated sprites because atlas rotation is not currently supported by Kaptan's sprite renderer.
+
 A Lua spritesheet can keep all metadata in pixels:
 
 ```lua
@@ -233,8 +237,6 @@ sprite:setOffset(data.offset.x, data.offset.y)
 local w, h = sprite:getSize()
 sprite:setPiv(-w / 2, -h / 2) -- logical frame top-left
 ```
-
-Atlas rotation is not currently supported. Export spritesheets without rotated frames.
 
 ### World Plus HUD Example
 
