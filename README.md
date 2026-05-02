@@ -515,7 +515,9 @@ music:play('theme')
 
 ### System Registration
 
-`KaptanAudioSystem.add(channel)` registers a channel with the audio system. Registered channels are kept alive by the system and released by `KaptanAudioSystem.clear()` or `KaptanAudioSystem.destroy()`.
+`KaptanAudioSystem.add(channel)` registers a channel with the audio system. The audio system does not accept duplicate references to the same channel. `KaptanAudioSystem.add(channel)` returns `true` when it registers a new channel and `false` when the channel is already registered.
+
+Registered channels are kept alive by the system and released by `KaptanAudioSystem.remove(channel)`, `KaptanAudioSystem.clear()`, or `KaptanAudioSystem.destroy()`. Removing a channel releases the system's reference without destroying a Lua-owned channel. `KaptanAudioSystem.remove(channel)` returns `true` when it removes a channel and `false` when the channel was not registered.
 
 Music channels registered with the audio system are updated automatically once per frame. This is required by Raylib streamed music playback.
 
@@ -758,6 +760,7 @@ List of available functions:
 * KaptanAudioSystem.isReady()
 * KaptanAudioSystem.add(channel)
 * KaptanAudioSystem.clear()
+* KaptanAudioSystem.remove(channel)
 * KaptanAudioSystem.setMasterVolume(volume)
 * KaptanAudioSystem.getMasterVolume()
 

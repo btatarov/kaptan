@@ -47,6 +47,7 @@ AudioSystemLuaBind :: proc(L: ^lua.State) {
         { "getMasterVolume", _get_master_volume },
         { "init",            _init },
         { "isReady",         _is_ready },
+        { "remove",          _remove },
         { "setMasterVolume", _set_master_volume },
         { nil, nil },
     }
@@ -136,6 +137,17 @@ remove_gone_channels :: proc() {
 }
 
 @(private="file")
+audio_system_contains_channel :: proc(channel: ^AudioChannel) -> bool {
+    for existing in audio_system.channels {
+        if existing == channel {
+            return true
+        }
+    }
+
+    return false
+}
+
+@(private="file")
 _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
@@ -143,16 +155,18 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
 
     channel := AudioChannelFromLua(L, 1)
 
-    for existing in audio_system.channels {
-        if existing == channel {
-            return 0
-        }
+    if audio_system_contains_channel(channel) {
+        lua.pushboolean(L, false)
+
+        return 1
     }
 
     AudioChannelAddRef(channel)
     append(&audio_system.channels, channel)
 
-    return 0
+    lua.pushboolean(L, true)
+
+    return 1
 }
 
 @(private="file")
@@ -165,10 +179,33 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_remove :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    channel := AudioChannelFromLua(L, 1)
+
+    for existing, index in audio_system.channels {
+        if existing == channel {
+            AudioChannelReleaseRef(existing)
+            ordered_remove(&audio_system.channels, index)
+
+            lua.pushboolean(L, true)
+
+            return 1
+        }
+    }
+
+    lua.pushboolean(L, false)
+
+    return 1
+}
+
+@(private="file")
 _destroy :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     DestroyAudioSystem()
+
     return 0
 }
 
@@ -177,6 +214,7 @@ _get_master_volume :: proc "c" (L: ^lua.State) -> i32 {
     AudioSystemRequireReady(L)
 
     lua.pushnumber(L, lua.Number(rl.GetMasterVolume()))
+
     return 1
 }
 
