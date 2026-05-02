@@ -460,6 +460,104 @@ Kaptan destroys the Lua state before tearing down renderer resources. This gives
 
 Renderer cleanup then releases remaining layer references. Layer cleanup releases remaining item references. Texture and font caches unload any resources that are still cached during final graphics teardown.
 
+## Audio System
+
+Audio initialization is explicit. Call `KaptanAudioSystem.init()` before loading or playing audio.
+
+```lua
+KaptanAudioSystem.init()
+```
+
+Kaptan does not initialize audio automatically because not every script needs an audio device. This keeps non-audio scripts and smoke tests usable in environments where audio may not be available.
+
+Cleanup is automatic on shutdown if audio was initialized, but you can call `KaptanAudioSystem.destroy()` manually when entering a mode that no longer needs audio:
+
+```lua
+KaptanAudioSystem.destroy()
+```
+
+### Sound And Music Channels
+
+Kaptan has two channel kinds:
+
+`KaptanAudioChannel.SOUND` loads files into memory with Raylib `Sound`. Use it for short effects like hits, jumps, pickups, UI clicks, and weapon sounds.
+
+`KaptanAudioChannel.MUSIC` streams from disk with Raylib `Music`. Use it for longer background music or ambience.
+
+```lua
+local sfx = KaptanAudioChannel.new(KaptanAudioChannel.SOUND)
+local music = KaptanAudioChannel.new(KaptanAudioChannel.MUSIC)
+```
+
+### Loading And Playback
+
+Audio channels store named resources. Load a resource once with `channel:add(name, path)`, then play it by name.
+
+```lua
+local sfx = KaptanAudioChannel.new(KaptanAudioChannel.SOUND)
+sfx:add('hit', 'tests/audio/hit.wav')
+KaptanAudioSystem.add(sfx)
+
+if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
+    sfx:play('hit')
+end
+```
+
+For music, create a music channel, load a streamed file, optionally enable looping, register it with the audio system, then play it:
+
+```lua
+local music = KaptanAudioChannel.new(KaptanAudioChannel.MUSIC)
+music:add('theme', 'tests/audio/theme.ogg')
+music:setLoop(true)
+KaptanAudioSystem.add(music)
+
+music:play('theme')
+```
+
+`channel:pause()`, `channel:resume()`, `channel:stop()`, and `channel:isPlaying()` operate on the channel's active resource. The active resource is set by the most recent `channel:play(name)` call.
+
+### System Registration
+
+`KaptanAudioSystem.add(channel)` registers a channel with the audio system. Registered channels are kept alive by the system and released by `KaptanAudioSystem.clear()` or `KaptanAudioSystem.destroy()`.
+
+Music channels registered with the audio system are updated automatically once per frame. This is required by Raylib streamed music playback.
+
+```lua
+KaptanAudioSystem.add(music)
+```
+
+If you do not add a music channel to the audio system, its stream will not be updated automatically.
+
+### Volume Pan Pitch And Looping
+
+Volume, pan, and pitch are channel-wide settings. They are applied to loaded resources and reused when a named resource is played.
+
+```lua
+sfx:setVolume(0.75)
+sfx:setPan(0.5)
+sfx:setPitch(1.0)
+```
+
+`channel:setLoop(loop)` is only valid for music channels. Calling it on a sound channel raises a Lua error.
+
+```lua
+music:setLoop(true)
+```
+
+### Audio Best Practices
+
+Load audio once, then play by name. Avoid loading files every time an effect plays.
+
+Use a few sound channels for categories such as combat, UI, and ambience. Use music channels for streamed tracks.
+
+Register music channels with `KaptanAudioSystem.add(channel)` so streaming updates happen automatically.
+
+Use `KaptanAudioSystem.clear()` to release all registered channels when changing scenes or resetting audio state:
+
+```lua
+KaptanAudioSystem.clear()
+```
+
 ## Lua API
 
 List of available functions:
@@ -562,6 +660,35 @@ List of available functions:
 * shape:setVisible(visible)
 
 `KaptanDraw.newPolygon(points)` expects a flat point list: `{x1, y1, x2, y2, ...}`.
+
+### Audio
+
+#### Audio System
+
+* KaptanAudioSystem.init()
+* KaptanAudioSystem.destroy()
+* KaptanAudioSystem.isReady()
+* KaptanAudioSystem.add(channel)
+* KaptanAudioSystem.clear()
+* KaptanAudioSystem.setMasterVolume(volume)
+* KaptanAudioSystem.getMasterVolume()
+
+#### Audio Channel
+
+* channel = KaptanAudioChannel.new(kind)
+* channel:add(name, path)
+* channel:play(name)
+* channel:pause()
+* channel:resume()
+* channel:stop()
+* channel:isPlaying()
+* channel:setVolume(volume)
+* channel:setPan(pan)
+* channel:setPitch(pitch)
+* channel:setLoop(loop)
+* channel:clear()
+* KaptanAudioChannel.SOUND
+* KaptanAudioChannel.MUSIC
 
 ### Keyboard
 

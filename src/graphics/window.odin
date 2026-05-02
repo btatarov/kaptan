@@ -5,6 +5,7 @@ import "core:log"
 import lua "vendor:lua/5.4"
 import rl "vendor:raylib"
 
+import "../audio"
 import "../core"
 
 Window :: struct {
@@ -75,6 +76,9 @@ WindowMainLoop :: proc() {
             status := lua.pcall(L, 0, 0, 0)
             core.LuaCheckOK(L, lua.Status(status))
         }
+
+        // audio
+        audio.AudioSystemUpdate()
 
         // rendering
         RendererDraw()

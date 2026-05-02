@@ -5,6 +5,7 @@ import "core:log"
 import "core:mem"
 import "core:os"
 
+import "audio"
 import "core"
 import "graphics"
 import "input"
@@ -34,6 +35,8 @@ main :: proc() {
     L := core.InitLuaState()
 
     graphics.WindowLuaBind(L)
+    audio.AudioSystemLuaBind(L)
+    audio.AudioChannelLuaBind(L)
     graphics.RendererLuaBind(L)
     graphics.LayerLuaBind(L)
     graphics.SpriteLuaBind(L)
@@ -42,6 +45,8 @@ main :: proc() {
     graphics.CameraLuaBind(L)
     defer {
         graphics.CameraLuaUnbind(L)
+        audio.AudioChannelLuaUnbind(L)
+        audio.AudioSystemLuaUnbind(L)
         graphics.TextLuaUnbind(L)
         graphics.DrawLuaUnbind(L)
         graphics.SpriteLuaUnbind(L)
