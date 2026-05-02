@@ -221,6 +221,199 @@ KaptanCamera.setZoom(2)
 
 The player is rendered in world space and moves relative to the camera. The label is rendered in screen space and remains fixed near the top center of the window.
 
+## Garbage Collection And Ownership
+
+Kaptan objects are split between Lua handles and Odin-owned render objects.
+
+When Lua creates a layer, sprite, draw shape, or text object, Lua receives userdata that stores a handle to an Odin object. The Odin object owns the actual runtime state, GPU/cache references, transform data, and render behavior.
+
+The important fields behind the scenes are `refs` and `is_gone`.
+
+`refs` answers: who is keeping this Odin object alive?
+
+`is_gone` answers: should this object still participate in rendering and owner lists?
+
+These solve different problems. Ref counts prevent use-after-free while a layer or renderer still references an object. `is_gone` is a pending-removal flag that lets Lua garbage collection request removal from renderer/layer lists.
+
+### Why `is_gone` Exists
+
+Consider this example:
+
+```lua
+layer = KaptanLayer.new()
+KaptanRenderer.add(layer)
+
+sprite = KaptanSprite.new('tests/sprites/kaptan1.png')
+layer:add(sprite)
+
+sprite = nil
+collectgarbage()
+```
+
+After `layer:add(sprite)`, the layer has a reference to the sprite. Internally, the sprite has `refs == 1` because the layer owns one render-list reference.
+
+When `sprite = nil` and Lua collects the userdata, Lua no longer has a handle to the sprite. The sprite should disappear from the layer. But the layer still has a reference, so freeing the sprite immediately would be unsafe.
+
+Instead, the sprite `__gc` marks it as gone:
+
+```odin
+__gc :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+
+    if !sprite.is_gone {
+        sprite.is_gone = true
+
+        if sprite.refs == 0 {
+            DestroySprite(sprite)
+        }
+    }
+
+    return 0
+}
+```
+
+On a later render cleanup, the layer sees the gone sprite and removes it from its item list:
+
+```odin
+for item in layer.items {
+    if is_item_gone(item) {
+        release_item(item)
+        continue
+    }
+
+    keep_item(item)
+}
+```
+
+Releasing the layer reference decrements `refs`. If `refs` reaches zero and the object is already gone, the object is destroyed.
+
+Without `is_gone`, the layer reference would keep the sprite alive and visible even though Lua discarded it. Without `refs`, Lua GC could free the sprite while the layer still had a pointer to it.
+
+The same rule applies to layers owned by the renderer:
+
+```lua
+layer = KaptanLayer.new()
+KaptanRenderer.add(layer)
+
+layer = nil
+collectgarbage()
+```
+
+The renderer has a reference to the layer. Lua GC marks the layer as gone, and the renderer removes it during cleanup. When the renderer releases its reference, the layer can be destroyed.
+
+### Ownership Flow
+
+Creating an object gives Lua a handle:
+
+```lua
+sprite = KaptanSprite.new('tests/sprites/kaptan1.png')
+text = KaptanText.new('tests/text/unitblock.ttf', 'Hello', 32)
+shape = KaptanDraw.newCircle(0, 0, 20)
+layer = KaptanLayer.new()
+```
+
+Adding an item to a layer gives the layer a reference:
+
+```lua
+layer:add(sprite)
+layer:add(text)
+layer:add(shape)
+```
+
+Adding a layer to the renderer gives the renderer a reference:
+
+```lua
+KaptanRenderer.add(layer)
+```
+
+Clearing a layer releases all item references held by that layer:
+
+```lua
+layer:clear()
+```
+
+Clearing the renderer releases all layer references held by the renderer:
+
+```lua
+KaptanRenderer.clear()
+```
+
+Setting a Lua variable to `nil` only removes the Lua handle. Actual destruction happens when Lua GC runs and all engine references have also been released.
+
+### Best Practices
+
+Keep Lua variables for objects you plan to update:
+
+```lua
+player = KaptanSprite.new('tests/sprites/kaptan1.png')
+world:add(player)
+
+function update_player(x, y)
+    player:setPos(x, y)
+end
+```
+
+Set a Lua variable to `nil` when you want Lua to stop owning that handle:
+
+```lua
+temporary_sprite = nil
+collectgarbage()
+```
+
+Use `layer:clear()` when a scene, enemy group, particle group, or HUD layer should drop every item it owns:
+
+```lua
+world:clear()
+```
+
+Use `KaptanRenderer.clear()` when changing the whole render graph:
+
+```lua
+KaptanRenderer.clear()
+```
+
+Do not rely on exact Lua GC timing for gameplay rules. Lua GC may run later than the line where you set a variable to `nil`. If something must disappear immediately from a layer, use `layer:clear()` for that whole layer or keep the object invisible with `setVisible(false)` until a more specific remove API exists.
+
+Avoid creating and discarding large numbers of objects every frame. For high-frequency effects such as damage numbers, prefer pooling reusable text objects:
+
+```lua
+damage = KaptanText.new('tests/text/unitblock.ttf', '', 28)
+damage:setVisible(false)
+hud:add(damage)
+
+function show_damage(amount, x, y)
+    damage:setText(tostring(amount))
+    damage:setPos(x, y)
+    damage:setVisible(true)
+end
+```
+
+### Resource Caches
+
+Sprites use a texture cache. Loading multiple sprites from the same path reuses the same cached texture resource.
+
+Text uses a font cache. Loading multiple text objects with the same font path and font size reuses the same cached Raylib font resource.
+
+When a sprite is destroyed, it releases its texture reference. When a text object is destroyed, it releases its font reference. Cached textures and fonts unload only when their cache reference count reaches zero.
+
+This means these patterns are efficient:
+
+```lua
+enemy1 = KaptanSprite.new('tests/sprites/kaptan1.png')
+enemy2 = KaptanSprite.new('tests/sprites/kaptan1.png')
+
+label1 = KaptanText.new('tests/text/unitblock.ttf', '10', 28)
+label2 = KaptanText.new('tests/text/unitblock.ttf', '25', 28)
+```
+
+Both sprites share one texture resource. Both text objects share one font resource because the font path and size match.
+
+### Shutdown
+
+Kaptan destroys the Lua state before tearing down renderer resources. This gives Lua `__gc` methods a chance to mark objects as gone before renderer, layer, texture, and font cleanup runs.
+
+Renderer cleanup then releases remaining layer references. Layer cleanup releases remaining item references. Texture and font caches unload any resources that are still cached during final graphics teardown.
+
 ## Lua API
 
 List of available functions:
