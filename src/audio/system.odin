@@ -10,9 +10,34 @@ import "../core"
 AudioSystem :: struct {
     initialized: bool,
     channels:    [dynamic]^AudioChannel,
+    live_channels: [dynamic]^AudioChannel,
 }
 
 @(private="file") audio_system: AudioSystem
+
+InitAudioSystem :: proc() {
+    if audio_system.initialized {
+        return
+    }
+
+    log.debugf("KaptanAudioSystem: Init")
+
+    rl.InitAudioDevice()
+    audio_system.initialized = rl.IsAudioDeviceReady()
+}
+
+DestroyAudioSystem :: proc() {
+    if ! audio_system.initialized {
+        return
+    }
+
+    log.debugf("KaptanAudioSystem: Destroy")
+
+    AudioSystemClear()
+    audio_system_clear_live_channel_resources()
+    rl.CloseAudioDevice()
+    audio_system.initialized = false
+}
 
 AudioSystemLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
@@ -27,35 +52,14 @@ AudioSystemLuaBind :: proc(L: ^lua.State) {
     }
 
     audio_system.channels = make([dynamic]^AudioChannel)
+    audio_system.live_channels = make([dynamic]^AudioChannel)
     core.LuaBindSingleton(L, "KaptanAudioSystem", &reg_table)
 }
 
 AudioSystemLuaUnbind :: proc(L: ^lua.State) {
-    AudioSystemDestroy()
+    DestroyAudioSystem()
     delete(audio_system.channels)
-}
-
-AudioSystemInit :: proc() {
-    if audio_system.initialized {
-        return
-    }
-
-    log.debugf("KaptanAudioSystem: Init")
-
-    rl.InitAudioDevice()
-    audio_system.initialized = rl.IsAudioDeviceReady()
-}
-
-AudioSystemDestroy :: proc() {
-    if ! audio_system.initialized {
-        return
-    }
-
-    log.debugf("KaptanAudioSystem: Destroy")
-
-    AudioSystemClear()
-    rl.CloseAudioDevice()
-    audio_system.initialized = false
+    delete(audio_system.live_channels)
 }
 
 AudioSystemClear :: proc() {
@@ -78,9 +82,40 @@ AudioSystemUpdate :: proc() {
     }
 }
 
-AudioSystemRequireReady :: proc(L: ^lua.State) {
+AudioSystemRequireReady :: proc "contextless" (L: ^lua.State) {
     if ! audio_system.initialized || ! rl.IsAudioDeviceReady() {
         lua.L_error(L, "KaptanAudioSystem.init() must be called before using audio")
+    }
+}
+
+AudioSystemRegisterLiveChannel :: proc(channel: ^AudioChannel) {
+    for existing in audio_system.live_channels {
+        if existing == channel {
+            return
+        }
+    }
+
+    append(&audio_system.live_channels, channel)
+}
+
+AudioSystemUnregisterLiveChannel :: proc(channel: ^AudioChannel) {
+    write := 0
+    for existing in audio_system.live_channels {
+        if existing == channel {
+            continue
+        }
+
+        audio_system.live_channels[write] = existing
+        write += 1
+    }
+
+    resize(&audio_system.live_channels, write)
+}
+
+@(private="file")
+audio_system_clear_live_channel_resources :: proc() {
+    for channel in audio_system.live_channels {
+        AudioChannelLuaClearResources(channel)
     }
 }
 
@@ -133,14 +168,12 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 _destroy :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    AudioSystemDestroy()
+    DestroyAudioSystem()
     return 0
 }
 
 @(private="file")
 _get_master_volume :: proc "c" (L: ^lua.State) -> i32 {
-    context = core.GetDefaultContext()
-
     AudioSystemRequireReady(L)
 
     lua.pushnumber(L, lua.Number(rl.GetMasterVolume()))
@@ -151,7 +184,7 @@ _get_master_volume :: proc "c" (L: ^lua.State) -> i32 {
 _init :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    AudioSystemInit()
+    InitAudioSystem()
 
     return 0
 }
@@ -165,8 +198,6 @@ _is_ready :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_master_volume :: proc "c" (L: ^lua.State) -> i32 {
-    context = core.GetDefaultContext()
-
     AudioSystemRequireReady(L)
 
     rl.SetMasterVolume(f32(lua.L_checknumber(L, 1)))

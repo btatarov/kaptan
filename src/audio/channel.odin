@@ -60,6 +60,7 @@ DestroyAudioChannel :: proc(channel: ^AudioChannel) {
 
     log.debugf("KaptanAudioChannel: Destroy")
 
+    AudioSystemUnregisterLiveChannel(channel)
     channel_clear(channel)
     delete(channel.sounds)
     delete(channel.music)
@@ -129,6 +130,10 @@ audio_channel_update :: proc(channel: ^AudioChannel) {
     if rl.IsMusicStreamPlaying(item.music) {
         rl.UpdateMusicStream(item.music)
     }
+}
+
+AudioChannelLuaClearResources :: proc(channel: ^AudioChannel) {
+    channel_clear(channel)
 }
 
 @(private="file")
@@ -220,6 +225,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     handle := (^^AudioChannel)(lua.newuserdata(L, size_of(^AudioChannel)))
     channel := new(AudioChannel)
     InitAudioChannel(channel, kind)
+    AudioSystemRegisterLiveChannel(channel)
     handle^ = channel
 
     core.LuaBindClassMetatable(L, "KaptanAudioChannel")
@@ -262,6 +268,8 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
 _clear :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
     channel_clear(channel)
 
@@ -270,6 +278,8 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _is_playing :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
 
     if len(channel.active) == 0 {
@@ -296,6 +306,8 @@ _is_playing :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _pause :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
 
     if len(channel.active) == 0 {
@@ -352,6 +364,8 @@ _play :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _resume :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
 
     if len(channel.active) == 0 {
@@ -374,6 +388,8 @@ _resume :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_loop :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
 
     if channel.kind != .Music {
@@ -391,6 +407,8 @@ _set_loop :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_pan :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
     channel.pan = f32(lua.L_checknumber(L, 2))
 
@@ -407,6 +425,8 @@ _set_pan :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_pitch :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
     channel.pitch = f32(lua.L_checknumber(L, 2))
 
@@ -423,6 +443,8 @@ _set_pitch :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_volume :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
     channel.volume = f32(lua.L_checknumber(L, 2))
 
@@ -439,6 +461,8 @@ _set_volume :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _stop :: proc "c" (L: ^lua.State) -> i32 {
+    AudioSystemRequireReady(L)
+
     channel := AudioChannelFromLua(L, 1)
 
     if len(channel.active) == 0 {
