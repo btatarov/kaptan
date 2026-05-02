@@ -343,12 +343,18 @@ shape = KaptanDraw.newCircle(0, 0, 20)
 layer = KaptanLayer.new()
 ```
 
-Adding an item to a layer gives the layer a reference:
+Adding an item to a layer gives the layer a reference. Layers do not accept duplicate references to the same object. `layer:add(...)` returns `true` when it adds a new object and `false` when the object is already in that layer.
 
 ```lua
 layer:add(sprite)
 layer:add(text)
 layer:add(shape)
+```
+
+Removing an item releases the layer's reference without destroying a Lua-owned object. `layer:remove(...)` returns `true` when it removes an object and `false` when the object was not in that layer.
+
+```lua
+layer:remove(sprite)
 ```
 
 Adding a layer to the renderer gives the renderer a reference:
@@ -403,7 +409,7 @@ Use `KaptanRenderer.clear()` when changing the whole render graph:
 KaptanRenderer.clear()
 ```
 
-Do not rely on exact Lua GC timing for gameplay rules. Lua GC may run later than the line where you set a variable to `nil`. If something must disappear immediately from a layer, use `layer:clear()` for that whole layer or keep the object invisible with `setVisible(false)` until a more specific remove API exists.
+Do not rely on exact Lua GC timing for gameplay rules. Lua GC may run later than the line where you set a variable to `nil`. If something must disappear immediately from a layer, use `layer:remove(object)`, `layer:clear()` for that whole layer, or keep the object invisible with `setVisible(false)`.
 
 Avoid creating and discarding large numbers of objects every frame. For high-frequency effects such as damage numbers, prefer pooling reusable text objects:
 
@@ -670,11 +676,13 @@ List of available functions:
 ### Layer
 
 * layer = KaptanLayer.new()
+* layer:add(sprite_or_shape_or_text)
+* layer:clear()
 * layer:isCamAttached()
 * layer:isVisible()
+* layer:remove(sprite_or_shape_or_text)
 * layer:setCamAttached(attached)
 * layer:setVisible(visible)
-* layer:add(sprite_or_shape_or_text)
 
 ### Sprite
 
@@ -750,6 +758,7 @@ List of available functions:
 
 * channel = KaptanAudioChannel.new(kind)
 * channel:add(name, path)
+* channel:clear()
 * channel:play(name)
 * channel:pause()
 * channel:resume()
@@ -759,7 +768,6 @@ List of available functions:
 * channel:setPan(pan)
 * channel:setPitch(pitch)
 * channel:setLoop(loop)
-* channel:clear()
 * KaptanAudioChannel.SOUND
 * KaptanAudioChannel.MUSIC
 
