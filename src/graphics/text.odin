@@ -220,8 +220,8 @@ _get_visible :: proc "c" (L: ^lua.State) -> i32 {
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
     text := TextFromLua(L, 1)
 
-    text.position.x = f32(lua.tonumber(L, 2))
-    text.position.y = f32(lua.tonumber(L, 3))
+    text.position.x = f32(lua.L_checknumber(L, 2))
+    text.position.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -230,8 +230,8 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
     text := TextFromLua(L, 1)
 
-    text.pivot.x = f32(lua.tonumber(L, 2))
-    text.pivot.y = f32(lua.tonumber(L, 3))
+    text.pivot.x = f32(lua.L_checknumber(L, 2))
+    text.pivot.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -240,7 +240,7 @@ _set_piv :: proc "c" (L: ^lua.State) -> i32 {
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
     text := TextFromLua(L, 1)
 
-    text.rotation = f32(lua.tonumber(L, 2))
+    text.rotation = f32(lua.L_checknumber(L, 2))
 
     return 0
 }
@@ -248,7 +248,7 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
 @(private="file")
 _set_scl :: proc "c" (L: ^lua.State) -> i32 {
     text := TextFromLua(L, 1)
-    scale := f32(lua.tonumber(L, 2))
+    scale := f32(lua.L_checknumber(L, 2))
 
     text.scale.x = scale
     text.scale.y = scale

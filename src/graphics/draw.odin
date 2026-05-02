@@ -279,7 +279,7 @@ _new_point :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     shape := new_shape(L, .Point)
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 1)), f32(lua.tonumber(L, 2))})
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))})
 
     return 1
 }
@@ -289,8 +289,8 @@ _new_line :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     shape := new_shape(L, .Line)
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 1)), f32(lua.tonumber(L, 2))})
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 3)), f32(lua.tonumber(L, 4))})
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))})
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 3)), f32(lua.L_checknumber(L, 4))})
 
     return 1
 }
@@ -300,8 +300,8 @@ _new_rect :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     shape := new_shape(L, .Rect)
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 1)), f32(lua.tonumber(L, 2))})
-    shape.size = linalg.Vector2f32{f32(lua.tonumber(L, 3)), f32(lua.tonumber(L, 4))}
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))})
+    shape.size = linalg.Vector2f32{f32(lua.L_checknumber(L, 3)), f32(lua.L_checknumber(L, 4))}
 
     return 1
 }
@@ -311,8 +311,8 @@ _new_circle :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     shape := new_shape(L, .Circle)
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 1)), f32(lua.tonumber(L, 2))})
-    shape.radius = f32(lua.tonumber(L, 3))
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))})
+    shape.radius = f32(lua.L_checknumber(L, 3))
 
     return 1
 }
@@ -322,8 +322,8 @@ _new_ellipse :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     shape := new_shape(L, .Ellipse)
-    append(&shape.points, linalg.Vector2f32{f32(lua.tonumber(L, 1)), f32(lua.tonumber(L, 2))})
-    shape.size = linalg.Vector2f32{f32(lua.tonumber(L, 3)), f32(lua.tonumber(L, 4))}
+    append(&shape.points, linalg.Vector2f32{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))})
+    shape.size = linalg.Vector2f32{f32(lua.L_checknumber(L, 3)), f32(lua.L_checknumber(L, 4))}
 
     return 1
 }
@@ -337,11 +337,11 @@ _new_polygon :: proc "c" (L: ^lua.State) -> i32 {
     point_count := i32(lua.rawlen(L, 1))
     for i := i32(1); i < point_count; i += 2 {
         lua.rawgeti(L, 1, lua.Integer(i))
-        x := f32(lua.tonumber(L, -1))
+        x := f32(lua.L_checknumber(L, -1))
         lua.pop(L, 1)
 
         lua.rawgeti(L, 1, lua.Integer(i + 1))
-        y := f32(lua.tonumber(L, -1))
+        y := f32(lua.L_checknumber(L, -1))
         lua.pop(L, 1)
 
         append(&shape.points, linalg.Vector2f32{x, y})
@@ -439,8 +439,8 @@ _set_color :: proc "c" (L: ^lua.State) -> i32 {
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
     shape := DrawShapeFromLua(L, 1)
 
-    shape.pivot.x = f32(lua.tonumber(L, 2))
-    shape.pivot.y = f32(lua.tonumber(L, 3))
+    shape.pivot.x = f32(lua.L_checknumber(L, 2))
+    shape.pivot.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -449,8 +449,8 @@ _set_piv :: proc "c" (L: ^lua.State) -> i32 {
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
     shape := DrawShapeFromLua(L, 1)
 
-    shape.position.x = f32(lua.tonumber(L, 2))
-    shape.position.y = f32(lua.tonumber(L, 3))
+    shape.position.x = f32(lua.L_checknumber(L, 2))
+    shape.position.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -459,7 +459,7 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
     shape := DrawShapeFromLua(L, 1)
 
-    shape.rotation = f32(lua.tonumber(L, 2))
+    shape.rotation = f32(lua.L_checknumber(L, 2))
 
     return 0
 }
@@ -468,8 +468,8 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
 _set_scl :: proc "c" (L: ^lua.State) -> i32 {
     shape := DrawShapeFromLua(L, 1)
 
-    shape.scale.x = f32(lua.tonumber(L, 2))
-    shape.scale.y = f32(lua.tonumber(L, 3))
+    shape.scale.x = f32(lua.L_checknumber(L, 2))
+    shape.scale.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }

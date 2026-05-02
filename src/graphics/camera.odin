@@ -110,30 +110,30 @@ _get_zoom :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
-    camera.pivot.x = f32(lua.tonumber(L, 1))
-    camera.pivot.y = f32(lua.tonumber(L, 2))
+    camera.pivot.x = f32(lua.L_checknumber(L, 1))
+    camera.pivot.y = f32(lua.L_checknumber(L, 2))
 
     return 0
 }
 
 @(private="file")
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
-    camera.position.x = f32(lua.tonumber(L, 1))
-    camera.position.y = f32(lua.tonumber(L, 2))
+    camera.position.x = f32(lua.L_checknumber(L, 1))
+    camera.position.y = f32(lua.L_checknumber(L, 2))
 
     return 0
 }
 
 @(private="file")
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
-    camera.rotation = f32(lua.tonumber(L, 1))
+    camera.rotation = f32(lua.L_checknumber(L, 1))
 
     return 0
 }
 
 @(private="file")
 _set_zoom :: proc "c" (L: ^lua.State) -> i32 {
-    camera.zoom = f32(lua.tonumber(L, 1))
+    camera.zoom = f32(lua.L_checknumber(L, 1))
 
     return 0
 }

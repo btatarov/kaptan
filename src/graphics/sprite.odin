@@ -25,7 +25,7 @@ Sprite :: struct {
 @(private="file") sprite_count: u32
 
 InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
-    log.debugf("LakshmiSprite: Init\n")
+    log.debugf("KaptanSprite: Init\n")
 
     InitTransform(&sprite.transform)
 
@@ -49,7 +49,7 @@ DestroySprite :: proc(sprite: ^Sprite) {
         return
     }
 
-    log.debugf("LakshmiSprite: Destroy\n")
+    log.debugf("KaptanSprite: Destroy\n")
 
     TextureDestroy(sprite.texture)
 
@@ -247,8 +247,8 @@ _set_offset :: proc "c" (L: ^lua.State) -> i32 {
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
 
-    sprite.pivot.x = f32(lua.tonumber(L, 2))
-    sprite.pivot.y = f32(lua.tonumber(L, 3))
+    sprite.pivot.x = f32(lua.L_checknumber(L, 2))
+    sprite.pivot.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -257,8 +257,8 @@ _set_piv :: proc "c" (L: ^lua.State) -> i32 {
 _set_pos :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
 
-    sprite.position.x = f32(lua.tonumber(L, 2))
-    sprite.position.y = f32(lua.tonumber(L, 3))
+    sprite.position.x = f32(lua.L_checknumber(L, 2))
+    sprite.position.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
@@ -267,7 +267,7 @@ _set_pos :: proc "c" (L: ^lua.State) -> i32 {
 _set_rot :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
 
-    sprite.rotation = f32(lua.tonumber(L, 2))
+    sprite.rotation = f32(lua.L_checknumber(L, 2))
 
     return 0
 }
@@ -276,8 +276,8 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
 _set_scl :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
 
-    sprite.scale.x = f32(lua.tonumber(L, 2))
-    sprite.scale.y = f32(lua.tonumber(L, 3))
+    sprite.scale.x = f32(lua.L_checknumber(L, 2))
+    sprite.scale.y = f32(lua.L_checknumber(L, 3))
 
     return 0
 }
