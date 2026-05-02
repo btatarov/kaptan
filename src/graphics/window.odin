@@ -74,7 +74,10 @@ WindowMainLoop :: proc() {
             lua.rawgeti(L, lua.REGISTRYINDEX, lua.Integer(loop_callback_ref))
 
             status := lua.pcall(L, 0, 0, 0)
-            core.LuaCheckOK(L, lua.Status(status))
+            if ! core.LuaCheckOK(L, lua.Status(status)) {
+                lua.pop(L, 1)
+                _clearLoopCallback(L)
+            }
         }
 
         // audio
@@ -94,9 +97,9 @@ WindowMainLoop :: proc() {
 _open :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    title := lua.tostring(L, 1)
-    width := lua.tonumber(L, 2)
-    height := lua.tonumber(L, 3)
+    title := lua.L_checkstring(L, 1)
+    width := lua.L_checkinteger(L, 2)
+    height := lua.L_checkinteger(L, 3)
 
     InitWindow(title, i32(width), i32(height))
 
@@ -154,9 +157,7 @@ _setLoopCallback :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     if ! lua.isfunction(L, 1) {
-        log.errorf("KaptanWindow.setLoopFunc: argument 1 is not a function")
-        lua.pop(L, 1)
-        return 0
+        return i32(lua.L_typeerror(L, 1, "function"))
     }
 
     _clearLoopCallback(L)
@@ -167,7 +168,7 @@ _setLoopCallback :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _setMaxFPS :: proc "c" (L: ^lua.State) -> i32 {
-    fps := lua.tonumber(L, 1)
+    fps := lua.L_checkinteger(L, 1)
 
     rl.SetTargetFPS(i32(fps))
 
