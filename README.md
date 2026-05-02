@@ -562,3 +562,20 @@ List of available functions:
 * shape:setVisible(visible)
 
 `KaptanDraw.newPolygon(points)` expects a flat point list: `{x1, y1, x2, y2, ...}`.
+
+### Keyboard
+
+* KaptanKeyboard.getKeysDown()
+* KaptanKeyboard.isDown(key)
+* KaptanKeyboard.isPressed(key)
+* KaptanKeyboard.isReleased(key)
+* KaptanKeyboard.isUp(key)
+* KaptanKeyboard.KEY_*
+
+Example:
+
+```lua
+if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
+    print('jump')
+end
+```

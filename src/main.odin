@@ -7,6 +7,7 @@ import "core:os"
 
 import "core"
 import "graphics"
+import "input"
 
 main :: proc() {
     core.InitContext()
@@ -48,6 +49,9 @@ main :: proc() {
         graphics.RendererLuaUnbind(L)
         graphics.WindowLuaUnbind(L)
     }
+
+    input.KeyboardLuaBind(L)
+    defer input.KeyboardLuaUnbind(L)
 
     defer core.DestroyLuaState(L)
 

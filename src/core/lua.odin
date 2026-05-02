@@ -122,6 +122,25 @@ LuaBindSingleton :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) 
     lua.pop(L, 1)
 }
 
+LuaBindSingletonWithConstants :: proc(
+    L: ^lua.State,
+    name: cstring,
+    reg_table: ^[]lua.L_Reg,
+    constants: ^map[cstring]u32,
+) {
+    lua.newtable(L)
+    lua.pushvalue(L, lua.gettop(L))
+    lua.setglobal(L, name)
+    lua.L_setfuncs(L, raw_data(reg_table[:]), 0)
+
+    for const_name, _ in constants {
+        lua.pushinteger(L, lua.Integer(constants[const_name]))
+        lua.setfield(L, -2, const_name)
+    }
+
+    lua.pop(L, 1)
+}
+
 LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
     if !lua.isuserdata(L, idx) {
         return false
