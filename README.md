@@ -579,3 +579,30 @@ if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
     print('jump')
 end
 ```
+
+### Mouse
+
+* KaptanMouse.getDelta()
+* KaptanMouse.getPos()
+* KaptanMouse.getScreenPos()
+* KaptanMouse.getWheel()
+* KaptanMouse.getWheelV()
+* KaptanMouse.getWorldPos()
+* KaptanMouse.isDown(button)
+* KaptanMouse.isPressed(button)
+* KaptanMouse.isReleased(button)
+* KaptanMouse.isUp(button)
+* KaptanMouse.BUTTON_*
+
+- `getScreenPos` returns raw top-left screen coordinates.
+- `getPos` returns center-relative screen coordinates for GUI layers.
+- `getWorldPos` returns the camera-attached world coordinate under the mouse.
+
+Example:
+
+```lua
+if KaptanMouse.isPressed(KaptanMouse.BUTTON_LEFT) then
+    local x, y = KaptanMouse.getWorldPos()
+    print('clicked world position', x, y)
+end
+```

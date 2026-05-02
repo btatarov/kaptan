@@ -51,7 +51,11 @@ main :: proc() {
     }
 
     input.KeyboardLuaBind(L)
-    defer input.KeyboardLuaUnbind(L)
+    input.MouseLuaBind(L)
+    defer {
+        input.MouseLuaUnbind(L)
+        input.KeyboardLuaUnbind(L)
+    }
 
     defer core.DestroyLuaState(L)
 
