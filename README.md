@@ -357,10 +357,16 @@ Removing an item releases the layer's reference without destroying a Lua-owned o
 layer:remove(sprite)
 ```
 
-Adding a layer to the renderer gives the renderer a reference:
+Adding a layer to the renderer gives the renderer a reference. The renderer does not accept duplicate references to the same layer. `KaptanRenderer.add(layer)` returns `true` when it adds a new layer and `false` when the layer is already registered.
 
 ```lua
 KaptanRenderer.add(layer)
+```
+
+Removing a layer releases the renderer's reference without destroying a Lua-owned layer. `KaptanRenderer.remove(layer)` returns `true` when it removes a layer and `false` when the layer was not registered.
+
+```lua
+KaptanRenderer.remove(layer)
 ```
 
 Clearing a layer releases all item references held by that layer:
@@ -660,6 +666,7 @@ List of available functions:
 
 * KaptanRenderer.add(layer)
 * KaptanRenderer.clear()
+* KaptanRenderer.remove(layer)
 * KaptanRenderer.setClearColor(r, g, b, a)
 
 ### Camera

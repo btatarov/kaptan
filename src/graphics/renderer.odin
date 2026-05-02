@@ -115,6 +115,7 @@ RendererLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
         { "add",           _add },
         { "clear",         _clear },
+        { "remove",        _remove },
         { "setClearColor", _setClearColor},
         { nil, nil },
     }
@@ -144,14 +145,34 @@ remove_gone_layers :: proc() {
 }
 
 @(private="file")
+renderer_contains_layer :: proc(layer: ^Layer) -> bool {
+    for existing in renderer.layer_list {
+        if existing == layer {
+            return true
+        }
+    }
+
+    return false
+}
+
+@(private="file")
 _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     layer := LayerFromLua(L, 1)
+
+    if renderer_contains_layer(layer) {
+        lua.pushboolean(L, false)
+
+        return 1
+    }
+
     LayerAddRef(layer)
     append(&renderer.layer_list, layer)
 
-    return 0
+    lua.pushboolean(L, true)
+
+    return 1
 }
 
 @(private="file")
@@ -161,6 +182,28 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
     RendererClearLayers()
 
     return 0
+}
+
+@(private="file")
+_remove :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    layer := LayerFromLua(L, 1)
+
+    for existing, index in renderer.layer_list {
+        if existing == layer {
+            LayerReleaseRef(existing)
+            ordered_remove(&renderer.layer_list, index)
+
+            lua.pushboolean(L, true)
+
+            return 1
+        }
+    }
+
+    lua.pushboolean(L, false)
+
+    return 1
 }
 
 @(private="file")
