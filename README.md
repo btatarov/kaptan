@@ -192,6 +192,50 @@ label:setRot(30)
 
 Rotation happens around the pivot. Use `setPiv` before `setRot` when you need a corner or custom anchor point.
 
+### Sprite Atlases
+
+Sprites can render a trimmed source rectangle from a larger texture atlas while keeping logical frame size and pivot behavior from the original untrimmed sprite.
+
+A Lua spritesheet can keep all metadata in pixels:
+
+```lua
+return {
+    texture = 'sheet.png',
+    sprites = {
+        kaptan1 = {
+            source = { x = 2, y = 2, w = 150, h = 100 },
+            frame = { w = 160, h = 110 },
+            offset = { x = 5, y = 5 },
+        },
+    }
+}
+```
+
+- `source` is the pixel rectangle sampled from the atlas texture.
+- `frame` is the original untrimmed logical sprite size.
+- `offset` is where the trimmed visible pixels start inside the untrimmed frame, measured from the frame top-left.
+
+Use the metadata when constructing a sprite:
+
+```lua
+local sheet = dofile('tests/spritesheet/sheet.lua')
+local data = sheet.sprites.kaptan1
+
+local sprite = KaptanSprite.new('tests/spritesheet/' .. sheet.texture)
+sprite:setSourceRect(data.source.x, data.source.y, data.source.w, data.source.h)
+sprite:setFrameSize(data.frame.w, data.frame.h)
+sprite:setOffset(data.offset.x, data.offset.y)
+```
+
+`sprite:getSize()` returns the logical frame size, not the trimmed source size. This keeps placement and pivot formulas consistent:
+
+```lua
+local w, h = sprite:getSize()
+sprite:setPiv(-w / 2, -h / 2) -- logical frame top-left
+```
+
+Atlas rotation is not currently supported. Export spritesheets without rotated frames.
+
 ### World Plus HUD Example
 
 This example renders a world sprite affected by the camera and a HUD label that stays fixed near the top of the screen.
@@ -467,10 +511,13 @@ List of available functions:
 * sprite:getSize()
 * sprite:isVisible()
 * sprite:setColor(r, g, b, a)
+* sprite:setFrameSize(w, h)
+* sprite:setOffset(x, y)
 * sprite:setPiv(x, y)
 * sprite:setPos(x, y)
 * sprite:setRot(angle)
 * sprite:setScl(x, y)
+* sprite:setSourceRect(x, y, w, h)
 * sprite:setVisible(visible)
 
 ### Text

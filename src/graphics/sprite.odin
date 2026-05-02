@@ -10,6 +10,8 @@ import "../core"
 Sprite :: struct {
     using transform: Transform,
     texture:         ^Texture,
+    source:          rl.Rectangle,
+    offset:          rl.Vector2,
     width:           i32,
     height:          i32,
     color:           rl.Color,
@@ -28,6 +30,8 @@ InitSprite :: proc(sprite: ^Sprite, texture: ^Texture) {
     InitTransform(&sprite.transform)
 
     sprite.texture = texture
+    sprite.source  = rl.Rectangle{0, 0, f32(texture.tex.width), f32(texture.tex.height)}
+    sprite.offset  = rl.Vector2{0, 0}
     sprite.width   = texture.tex.width
     sprite.height  = texture.tex.height
     sprite.color   = rl.WHITE
@@ -77,18 +81,21 @@ SpriteLuaBind :: proc(L: ^lua.State) {
     }
 
     @static instance_reg_table: []lua.L_Reg = {
-        { "getPiv",     _get_piv },
-        { "getPos",     _get_pos },
-        { "getRot",     _get_rot },
-        { "getScl",     _get_scl },
-        { "getSize",    _get_size },
-        { "isVisible",  _get_visible },
-        { "setColor",   _set_color },
-        { "setPiv",     _set_piv },
-        { "setPos",     _set_pos },
-        { "setRot",     _set_rot },
-        { "setScl",     _set_scl },
-        { "setVisible", _set_visible },
+        { "getPiv",        _get_piv },
+        { "getPos",        _get_pos },
+        { "getRot",        _get_rot },
+        { "getScl",        _get_scl },
+        { "getSize",       _get_size },
+        { "isVisible",     _get_visible },
+        { "setColor",      _set_color },
+        { "setFrameSize",  _set_frame_size },
+        { "setOffset",     _set_offset },
+        { "setPiv",        _set_piv },
+        { "setPos",        _set_pos },
+        { "setRot",        _set_rot },
+        { "setScl",        _set_scl },
+        { "setSourceRect", _set_source_rect },
+        { "setVisible",    _set_visible },
         { nil, nil },
     }
     core.LuaBindClass(L, "KaptanSprite", &static_reg_table, &instance_reg_table, __gc)
@@ -101,31 +108,24 @@ SpriteLuaUnbind :: proc(L: ^lua.State) {
 @(private="file")
 sprite_draw :: proc(sprite: ^Sprite) {
     if !sprite.is_gone && sprite.visible {
-        w := f32(sprite.width)
-        h := f32(sprite.height)
-
-        src := rl.Rectangle{
-            0,
-            0,
-            w,
-            h,
-        }
+        visible_left := -f32(sprite.width) * 0.5 + sprite.offset.x
+        visible_top := -f32(sprite.height) * 0.5 + sprite.offset.y
 
         origin := rl.Vector2{
-            (w * 0.5 + sprite.pivot.x) * sprite.scale.x,
-            (h * 0.5 + sprite.pivot.y) * sprite.scale.y,
+            (sprite.pivot.x - visible_left) * sprite.scale.x,
+            (sprite.pivot.y - visible_top) * sprite.scale.y,
         }
 
         dst := rl.Rectangle{
             sprite.position.x + sprite.pivot.x,
             sprite.position.y + sprite.pivot.y,
-            w * sprite.scale.x,
-            h * sprite.scale.y,
+            sprite.source.width * sprite.scale.x,
+            sprite.source.height * sprite.scale.y,
         }
 
         rl.DrawTexturePro(
             sprite.texture.tex,
-            src,
+            sprite.source,
             dst,
             origin,
             sprite.rotation,
@@ -224,6 +224,26 @@ _set_color :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_set_frame_size :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+
+    sprite.width = i32(lua.L_checkinteger(L, 2))
+    sprite.height = i32(lua.L_checkinteger(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_offset :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+
+    sprite.offset.x = f32(lua.L_checknumber(L, 2))
+    sprite.offset.y = f32(lua.L_checknumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
 _set_piv :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
 
@@ -258,6 +278,18 @@ _set_scl :: proc "c" (L: ^lua.State) -> i32 {
 
     sprite.scale.x = f32(lua.tonumber(L, 2))
     sprite.scale.y = f32(lua.tonumber(L, 3))
+
+    return 0
+}
+
+@(private="file")
+_set_source_rect :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+
+    sprite.source.x = f32(lua.L_checknumber(L, 2))
+    sprite.source.y = f32(lua.L_checknumber(L, 3))
+    sprite.source.width = f32(lua.L_checknumber(L, 4))
+    sprite.source.height = f32(lua.L_checknumber(L, 5))
 
     return 0
 }
