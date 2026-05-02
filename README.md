@@ -2,6 +2,22 @@
 
 Kaptan is a 2D game engine with Box2D physics and Lua scripting. Written in Odin using Raylib. Work in progress.
 
+## Quick Start
+
+Run the default non-window smoke script:
+
+```sh
+./build.sh
+```
+
+Run a simple window scenario:
+
+```sh
+./build.sh debug tests/window/main.lua
+```
+
+`tests/main.lua` is the safest smoke test because it does not open a window. Most other scenarios under `tests/` open a Raylib window and are intended for manual checks.
+
 ## Rendering Model
 
 Kaptan uses a center-relative 2D rendering model. Object positions are not top-left screen coordinates. By default, `{0, 0}` means the center of the current render space.
@@ -10,7 +26,7 @@ For normal world layers, the render space is controlled by `KaptanCamera`. For G
 
 Positive `x` moves right. Positive `y` moves down.
 
-### Layers And Cameras
+### Layers And Camera Attachment
 
 Layers are render containers. A layer can be attached to the camera or detached from it.
 
@@ -267,21 +283,21 @@ KaptanCamera.setZoom(2)
 
 The player is rendered in world space and moves relative to the camera. The label is rendered in screen space and remains fixed near the top center of the window.
 
-## Garbage Collection And Ownership
+## Object Lifetime And Ownership
 
-Kaptan objects are split between Lua handles and Odin-owned render objects.
+Kaptan objects are split between Lua handles and Odin-owned runtime objects.
 
 When Lua creates a layer, sprite, draw shape, or text object, Lua receives userdata that stores a handle to an Odin object. The Odin object owns the actual runtime state, GPU/cache references, transform data, and render behavior.
 
+Engine containers can also hold references. A layer keeps references to sprites, shapes, and text objects added with `layer:add(...)`. The renderer keeps references to layers added with `KaptanRenderer.add(layer)`.
+
 The important fields behind the scenes are `refs` and `is_gone`.
 
-`refs` answers: who is keeping this Odin object alive?
+`refs` tracks engine references that are keeping an Odin object alive. `is_gone` marks an object for removal from render lists after Lua has dropped its handle.
 
-`is_gone` answers: should this object still participate in rendering and owner lists?
+These solve different problems. Ref counts prevent use-after-free while a layer or renderer still references an object. The gone flag lets Lua garbage collection request removal from renderer/layer lists without freeing an object that is still referenced by the engine.
 
-These solve different problems. Ref counts prevent use-after-free while a layer or renderer still references an object. `is_gone` is a pending-removal flag that lets Lua garbage collection request removal from renderer/layer lists.
-
-### Why `is_gone` Exists
+### Lua Handles And Engine References
 
 Consider this example:
 
@@ -300,38 +316,7 @@ After `layer:add(sprite)`, the layer has a reference to the sprite. Internally, 
 
 When `sprite = nil` and Lua collects the userdata, Lua no longer has a handle to the sprite. The sprite should disappear from the layer. But the layer still has a reference, so freeing the sprite immediately would be unsafe.
 
-Instead, the sprite `__gc` marks it as gone:
-
-```odin
-__gc :: proc "c" (L: ^lua.State) -> i32 {
-    sprite := SpriteFromLua(L, 1)
-
-    if !sprite.is_gone {
-        sprite.is_gone = true
-
-        if sprite.refs == 0 {
-            DestroySprite(sprite)
-        }
-    }
-
-    return 0
-}
-```
-
-On a later render cleanup, the layer sees the gone sprite and removes it from its item list:
-
-```odin
-for item in layer.items {
-    if is_item_gone(item) {
-        release_item(item)
-        continue
-    }
-
-    keep_item(item)
-}
-```
-
-Releasing the layer reference decrements `refs`. If `refs` reaches zero and the object is already gone, the object is destroyed.
+Instead, Lua garbage collection marks the sprite as gone. On a later render cleanup, the layer removes gone items from its list and releases its references. If `refs` reaches zero and the object is already gone, the object is destroyed.
 
 Without `is_gone`, the layer reference would keep the sprite alive and visible even though Lua discarded it. Without `refs`, Lua GC could free the sprite while the layer still had a pointer to it.
 
@@ -476,7 +461,7 @@ Cleanup is automatic on shutdown if audio was initialized, but you can call `Kap
 KaptanAudioSystem.destroy()
 ```
 
-### Sound And Music Channels
+### Sound And Music
 
 Kaptan has two channel kinds:
 
@@ -528,7 +513,7 @@ KaptanAudioSystem.add(music)
 
 If you do not add a music channel to the audio system, its stream will not be updated automatically.
 
-### Volume Pan Pitch And Looping
+### Volume, Pan, Pitch, And Looping
 
 Volume, pan, and pitch are channel-wide settings. They are applied to loaded resources and reused when a named resource is played.
 
@@ -616,7 +601,7 @@ PS and Xbox controllers use Raylib's generic gamepad layout. Button constants ar
 
 Use `KaptanGamepad.getLeftStick(gamepad)`, `KaptanGamepad.getRightStick(gamepad)`, and `KaptanGamepad.getTriggers(gamepad)` for common controller input. Use `KaptanGamepad.getAxis(gamepad, axis)` for raw axis access.
 
-Analog deadzones are currently game-code responsibility.
+Game code should apply deadzones to analog stick input.
 
 ```lua
 local pad = 1
@@ -647,8 +632,6 @@ Use a deadzone for analog sticks to avoid drift.
 Use `KaptanMouse.getWorldPos()` when interacting with world objects.
 
 Use `KaptanMouse.getPos()` when interacting with GUI or HUD objects.
-
-Manual input scenarios live under `tests/input/`. They open a window and should be run manually.
 
 ## Lua API
 
