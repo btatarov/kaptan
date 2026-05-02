@@ -47,7 +47,12 @@ GamepadLuaUnbind :: proc(L: ^lua.State) {
 
 @(private="file")
 gamepad_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> c.int {
-    return c.int(lua.L_checkinteger(L, idx) - 1)
+    gamepad := lua.L_checkinteger(L, idx)
+    if gamepad < 1 {
+        return lua.L_argerror(L, c.int(idx), "gamepad index must be >= 1")
+    }
+
+    return c.int(gamepad - 1)
 }
 
 @(private="file")
