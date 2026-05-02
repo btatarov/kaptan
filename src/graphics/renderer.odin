@@ -147,7 +147,7 @@ remove_gone_layers :: proc() {
 _add :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    layer := LayerFromLua(L, -1)
+    layer := LayerFromLua(L, 1)
     LayerAddRef(layer)
     append(&renderer.layer_list, layer)
 
@@ -165,10 +165,10 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _setClearColor :: proc "c" (L: ^lua.State) -> i32 {
-    r := u8(lua.tonumber(L, 1))
-    g := u8(lua.tonumber(L, 2))
-    b := u8(lua.tonumber(L, 3))
-    a := u8(lua.tonumber(L, 4))
+    r := u8(clamp(int(lua.L_checkinteger(L, 1)), 0, 255))
+    g := u8(clamp(int(lua.L_checkinteger(L, 2)), 0, 255))
+    b := u8(clamp(int(lua.L_checkinteger(L, 3)), 0, 255))
+    a := u8(clamp(int(lua.L_checkinteger(L, 4)), 0, 255))
 
     renderer.clear_color = rl.Color{r, g, b, a}
 
