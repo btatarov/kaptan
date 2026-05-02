@@ -558,6 +558,98 @@ Use `KaptanAudioSystem.clear()` to release all registered channels when changing
 KaptanAudioSystem.clear()
 ```
 
+## Input System
+
+Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
+
+Supported devices are keyboard, mouse, and gamepad.
+
+### Keyboard Input
+
+Keyboard constants are exposed as `KaptanKeyboard.KEY_*`.
+
+`KaptanKeyboard.isDown(key)` is true while a key is held. `KaptanKeyboard.isPressed(key)` is true only on the frame where the key transitions from up to down. `KaptanKeyboard.isReleased(key)` is true only on the release frame. `KaptanKeyboard.isUp(key)` is true while the key is not held.
+
+`KaptanKeyboard.getKeysDown()` returns an array of currently held key codes.
+
+```lua
+KaptanWindow.setLoopCallback(function()
+    if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
+        print('jump')
+    end
+
+    if KaptanKeyboard.isDown(KaptanKeyboard.KEY_Q) then
+        KaptanWindow.quit()
+    end
+end)
+```
+
+### Mouse Input
+
+Mouse button constants are exposed as `KaptanMouse.BUTTON_*`.
+
+`KaptanMouse.getScreenPos()` returns raw top-left window coordinates. This matches Raylib screen coordinates.
+
+`KaptanMouse.getPos()` returns center-relative screen coordinates. Use it for GUI or HUD elements on layers with `layer:setCamAttached(false)`.
+
+`KaptanMouse.getWorldPos()` converts the current mouse position through `KaptanCamera`. Use it for picking or placing objects in camera-attached world layers.
+
+`KaptanMouse.getDelta()` returns mouse movement since the last frame. `KaptanMouse.getWheel()` returns vertical wheel movement. `KaptanMouse.getWheelV()` returns horizontal and vertical wheel movement.
+
+```lua
+if KaptanMouse.isPressed(KaptanMouse.BUTTON_LEFT) then
+    local x, y = KaptanMouse.getWorldPos()
+    print('clicked world position', x, y)
+end
+```
+
+```lua
+local x, y = KaptanMouse.getPos()
+cursor_label:setPos(x, y)
+```
+
+### Gamepad Input
+
+Gamepad indices are Lua-style: `1` is the first connected gamepad. Internally, Kaptan converts this to Raylib's zero-based gamepad index.
+
+PS and Xbox controllers use Raylib's generic gamepad layout. Button constants are exposed as `KaptanGamepad.BUTTON_*`. Axis constants are exposed as `KaptanGamepad.AXIS_*`.
+
+Use `KaptanGamepad.getLeftStick(gamepad)`, `KaptanGamepad.getRightStick(gamepad)`, and `KaptanGamepad.getTriggers(gamepad)` for common controller input. Use `KaptanGamepad.getAxis(gamepad, axis)` for raw axis access.
+
+Analog deadzones are currently game-code responsibility.
+
+```lua
+local pad = 1
+
+KaptanWindow.setLoopCallback(function()
+    if KaptanGamepad.isAvailable(pad) then
+        local x, y = KaptanGamepad.getLeftStick(pad)
+
+        if math.abs(x) > 0.2 or math.abs(y) > 0.2 then
+            print('move', x, y)
+        end
+
+        if KaptanGamepad.isPressed(pad, KaptanGamepad.BUTTON_RIGHT_FACE_DOWN) then
+            print('confirm')
+        end
+    end
+end)
+```
+
+### Input Best Practices
+
+Use `isPressed` for one-shot actions like jump, confirm, pause, or opening a menu.
+
+Use `isDown` for continuous actions like movement, charging, aiming, or holding a button.
+
+Use a deadzone for analog sticks to avoid drift.
+
+Use `KaptanMouse.getWorldPos()` when interacting with world objects.
+
+Use `KaptanMouse.getPos()` when interacting with GUI or HUD objects.
+
+Manual input scenarios live under `tests/input/`. They open a window and should be run manually.
+
 ## Lua API
 
 List of available functions:
@@ -644,7 +736,7 @@ List of available functions:
 * shape = KaptanDraw.newRect(x, y, width, height)
 * shape = KaptanDraw.newCircle(x, y, radius)
 * shape = KaptanDraw.newEllipse(x, y, radiusX, radiusY)
-* shape = KaptanDraw.newPolygon(points)
+* shape = KaptanDraw.newPolygon(points)  -- a flat list: `{x1, y1, x2, y2, ...}`
 * shape:getPiv()
 * shape:getPos()
 * shape:getRot()
@@ -658,8 +750,6 @@ List of available functions:
 * shape:setRot(angle)
 * shape:setScl(x, y)
 * shape:setVisible(visible)
-
-`KaptanDraw.newPolygon(points)` expects a flat point list: `{x1, y1, x2, y2, ...}`.
 
 ### Audio
 
@@ -699,14 +789,6 @@ List of available functions:
 * KaptanKeyboard.isUp(key)
 * KaptanKeyboard.KEY_*
 
-Example:
-
-```lua
-if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
-    print('jump')
-end
-```
-
 ### Mouse
 
 * KaptanMouse.getDelta()
@@ -720,19 +802,6 @@ end
 * KaptanMouse.isReleased(button)
 * KaptanMouse.isUp(button)
 * KaptanMouse.BUTTON_*
-
-- `getScreenPos` returns raw top-left screen coordinates.
-- `getPos` returns center-relative screen coordinates for GUI layers.
-- `getWorldPos` returns the camera-attached world coordinate under the mouse.
-
-Example:
-
-```lua
-if KaptanMouse.isPressed(KaptanMouse.BUTTON_LEFT) then
-    local x, y = KaptanMouse.getWorldPos()
-    print('clicked world position', x, y)
-end
-```
 
 ### Gamepad
 
@@ -750,19 +819,3 @@ end
 * KaptanGamepad.isUp(gamepad, button)
 * KaptanGamepad.AXIS_*
 * KaptanGamepad.BUTTON_*
-
-Gamepad indices are Lua-style: `1` is the first connected gamepad. PS and Xbox controllers use Raylib's generic gamepad layout constants.
-
-Example:
-
-```lua
-local pad = 1
-
-if KaptanGamepad.isAvailable(pad) then
-    local x, y = KaptanGamepad.getLeftStick(pad)
-
-    if KaptanGamepad.isPressed(pad, KaptanGamepad.BUTTON_RIGHT_FACE_DOWN) then
-        print('face button pressed')
-    end
-end
-```
