@@ -147,7 +147,10 @@ LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name
     }
 
     abs_idx := LuaGetAbsIndex(L, idx)
-    lua.getmetatable(L, abs_idx)
+    if lua.getmetatable(L, abs_idx) == 0 {
+        return false
+    }
+
     lua.L_getmetatable(L, metatable_name)
 
     result := lua.rawequal(L, -1, -2)
