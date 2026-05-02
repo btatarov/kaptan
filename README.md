@@ -606,3 +606,36 @@ if KaptanMouse.isPressed(KaptanMouse.BUTTON_LEFT) then
     print('clicked world position', x, y)
 end
 ```
+
+### Gamepad
+
+* KaptanGamepad.getAxis(gamepad, axis)
+* KaptanGamepad.getAxisCount(gamepad)
+* KaptanGamepad.getButtonPressed()
+* KaptanGamepad.getLeftStick(gamepad)
+* KaptanGamepad.getName(gamepad)
+* KaptanGamepad.getRightStick(gamepad)
+* KaptanGamepad.getTriggers(gamepad)
+* KaptanGamepad.isAvailable(gamepad)
+* KaptanGamepad.isDown(gamepad, button)
+* KaptanGamepad.isPressed(gamepad, button)
+* KaptanGamepad.isReleased(gamepad, button)
+* KaptanGamepad.isUp(gamepad, button)
+* KaptanGamepad.AXIS_*
+* KaptanGamepad.BUTTON_*
+
+Gamepad indices are Lua-style: `1` is the first connected gamepad. PS and Xbox controllers use Raylib's generic gamepad layout constants.
+
+Example:
+
+```lua
+local pad = 1
+
+if KaptanGamepad.isAvailable(pad) then
+    local x, y = KaptanGamepad.getLeftStick(pad)
+
+    if KaptanGamepad.isPressed(pad, KaptanGamepad.BUTTON_RIGHT_FACE_DOWN) then
+        print('face button pressed')
+    end
+end
+```

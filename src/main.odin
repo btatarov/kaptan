@@ -52,7 +52,9 @@ main :: proc() {
 
     input.KeyboardLuaBind(L)
     input.MouseLuaBind(L)
+    input.GamepadLuaBind(L)
     defer {
+        input.GamepadLuaUnbind(L)
         input.MouseLuaUnbind(L)
         input.KeyboardLuaUnbind(L)
     }
