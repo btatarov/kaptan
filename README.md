@@ -643,6 +643,24 @@ end
 
 Event shape fields can be `nil` for end events if Box2D reports a shape that was already destroyed. Check fields before using them.
 
+Use queries to find shapes without changing the simulation:
+
+```lua
+local hits = KaptanPhysics.queryAABB(0, 0, 128, 128, {
+    mask = CATEGORY_ENEMY,
+})
+
+local hit = KaptanPhysics.raycast(0, 0, 400, 0, {
+    mask = CATEGORY_WALL,
+})
+
+if hit then
+    print(hit.shape, hit.x, hit.y, hit.normalX, hit.normalY, hit.fraction)
+end
+```
+
+`queryAABB(x, y, width, height, options)` treats `x, y` as the center of the query box. Query options support `category` and `mask` bits. `raycast` returns the closest hit or `nil`.
+
 Use category and mask bits to control which shapes collide or appear in queries:
 
 ```lua
@@ -888,6 +906,8 @@ List of available functions:
 * KaptanPhysics.destroy()
 * KaptanPhysics.clear()
 * KaptanPhysics.isReady()
+* KaptanPhysics.queryAABB(x, y, width, height, options)
+* KaptanPhysics.raycast(x1, y1, x2, y2, options)
 * KaptanPhysics.getGravity()
 * KaptanPhysics.getContactEvents()
 * KaptanPhysics.getSensorEvents()

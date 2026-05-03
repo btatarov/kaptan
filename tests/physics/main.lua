@@ -63,6 +63,13 @@ if sensor_events[1] then
     print('first sensor event kind', sensor_events[1].kind)
     print('first sensor shape valid', sensor_events[1].sensor:isValid(), sensor_events[1].visitor:isValid())
 end
+local queried_shapes = KaptanPhysics.queryAABB(10, 20, 64, 64, { mask = CATEGORY_ENEMY })
+local ray_hit = KaptanPhysics.raycast(-40, 0, 40, 0, { mask = CATEGORY_ENEMY })
+print('query aabb enemy hits', #queried_shapes)
+print('raycast enemy hit', ray_hit ~= nil)
+if ray_hit then
+    print('raycast shape valid', ray_hit.shape:isValid())
+end
 
 print('box density', box:getDensity())
 print('box friction', box:getFriction())

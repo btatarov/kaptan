@@ -16,6 +16,10 @@ PhysicsSystem :: struct {
     units_per_meter: f32,
 }
 
+PhysicsQueryContext :: struct {
+    shapes: [dynamic]^PhysicsShape,
+}
+
 @(private="file") physics_system: PhysicsSystem
 @(private="file") DEFAULT_SUBSTEPS: i32 = 2
 @(private="file") DEFAULT_UNITS_PER_METER: f32 = 64
@@ -107,6 +111,8 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
         { "getUnitsPerMeter", _get_units_per_meter },
         { "init",             _init },
         { "isReady",          _is_ready },
+        { "queryAABB",        _query_aabb },
+        { "raycast",          _raycast },
         { "setGravity",       _set_gravity },
         { "setSubsteps",      _set_substeps },
         { "setUnitsPerMeter", _set_units_per_meter },
@@ -208,6 +214,74 @@ push_contact_hit_event :: proc(L: ^lua.State, event: b2.ContactHitEvent) {
     set_event_number(L, event_idx, "normalX", event.normal.x)
     set_event_number(L, event_idx, "normalY", event.normal.y)
     set_event_number(L, event_idx, "approachSpeed", event.approachSpeed)
+}
+
+@(private="file")
+query_filter_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> b2.QueryFilter {
+    filter := b2.DefaultQueryFilter()
+    if idx == 0 || lua.isnoneornil(L, idx) {
+        return filter
+    }
+
+    if ! lua.istable(L, idx) {
+        lua.L_typeerror(L, idx, "table")
+    }
+
+    abs_idx := core.LuaGetAbsIndex(L, idx)
+
+    lua.getfield(L, abs_idx, "category")
+    if ! lua.isnil(L, -1) {
+        filter.categoryBits = u64(lua.L_checkinteger(L, -1))
+    }
+    lua.pop(L, 1)
+
+    lua.getfield(L, abs_idx, "mask")
+    if ! lua.isnil(L, -1) {
+        filter.maskBits = u64(lua.L_checkinteger(L, -1))
+    }
+    lua.pop(L, 1)
+
+    return filter
+}
+
+@(private="file")
+push_shape_refs_array :: proc(L: ^lua.State, shapes: []^PhysicsShape) {
+    lua.createtable(L, c.int(len(shapes)), 0)
+    for shape, index in shapes {
+        PhysicsShapePushLuaRef(L, shape)
+        lua.rawseti(L, -2, lua.Integer(index + 1))
+    }
+}
+
+@(private="file")
+overlap_aabb_callback :: proc "c" (shape_id: b2.ShapeId, ctx: rawptr) -> bool {
+    context = core.GetDefaultContext()
+
+    query := (^PhysicsQueryContext)(ctx)
+    shape := PhysicsShapeFromId(shape_id)
+    if PhysicsShapeIsValid(shape) {
+        append(&query.shapes, shape)
+    }
+
+    return true
+}
+
+@(private="file")
+push_ray_result :: proc(L: ^lua.State, result: b2.RayResult) {
+    if ! result.hit {
+        lua.pushnil(L)
+        return
+    }
+
+    lua.createtable(L, 0, 8)
+    result_idx := lua.gettop(L)
+
+    set_event_shape(L, result_idx, "shape", PhysicsShapeFromId(result.shapeId))
+    set_event_number(L, result_idx, "x", result.point.x)
+    set_event_number(L, result_idx, "y", result.point.y)
+    set_event_number(L, result_idx, "normalX", result.normal.x)
+    set_event_number(L, result_idx, "normalY", result.normal.y)
+    set_event_number(L, result_idx, "fraction", result.fraction)
 }
 
 @(private="file")
@@ -322,6 +396,57 @@ _init :: proc "c" (L: ^lua.State) -> i32 {
 @(private="file")
 _is_ready :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(physics_system.initialized && b2.World_IsValid(physics_system.world)))
+    return 1
+}
+
+@(private="file")
+_query_aabb :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    PhysicsSystemRequireReady(L)
+
+    x := f32(lua.L_checknumber(L, 1))
+    y := f32(lua.L_checknumber(L, 2))
+    width := f32(lua.L_checknumber(L, 3))
+    height := f32(lua.L_checknumber(L, 4))
+    if width <= 0 {
+        return i32(lua.L_argerror(L, 3, "query width must be > 0"))
+    }
+    if height <= 0 {
+        return i32(lua.L_argerror(L, 4, "query height must be > 0"))
+    }
+
+    half_width := width * 0.5
+    half_height := height * 0.5
+    aabb := b2.AABB{
+        lowerBound = b2.Vec2{x - half_width, y - half_height},
+        upperBound = b2.Vec2{x + half_width, y + half_height},
+    }
+    filter := query_filter_from_lua(L, 5)
+    query := PhysicsQueryContext{shapes = make([dynamic]^PhysicsShape, allocator = context.temp_allocator)}
+    _ = b2.World_OverlapAABB(physics_system.world, aabb, filter, overlap_aabb_callback, &query)
+    push_shape_refs_array(L, query.shapes[:])
+
+    return 1
+}
+
+@(private="file")
+_raycast :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    PhysicsSystemRequireReady(L)
+
+    start := b2.Vec2{f32(lua.L_checknumber(L, 1)), f32(lua.L_checknumber(L, 2))}
+    end := b2.Vec2{f32(lua.L_checknumber(L, 3)), f32(lua.L_checknumber(L, 4))}
+    translation := b2.Vec2{end.x - start.x, end.y - start.y}
+    if translation.x == 0 && translation.y == 0 {
+        return i32(lua.L_argerror(L, 3, "raycast end point must differ from start point"))
+    }
+
+    filter := query_filter_from_lua(L, 5)
+    result := b2.World_CastRayClosest(physics_system.world, start, translation, filter)
+    push_ray_result(L, result)
+
     return 1
 }
 
