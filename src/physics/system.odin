@@ -16,6 +16,8 @@ PhysicsSystem :: struct {
     bodies:          [dynamic]^PhysicsBody,
     substeps:        i32,
     units_per_meter: f32,
+    tick_rate:       f32,
+    accumulator:     f32,
     debug_draw:      bool,
 }
 
@@ -26,6 +28,8 @@ PhysicsQueryContext :: struct {
 @(private="file") physics_system: PhysicsSystem
 @(private="file") DEFAULT_SUBSTEPS: i32 = 2
 @(private="file") DEFAULT_UNITS_PER_METER: f32 = 64
+@(private="file") DEFAULT_TICK_RATE: f32 = 60
+@(private="file") MAX_FRAME_TIME: f32 = 0.25
 
 PhysicsSystemInit :: proc() {
     if physics_system.initialized {
@@ -41,6 +45,12 @@ PhysicsSystemInit :: proc() {
     if physics_system.substeps < 1 {
         physics_system.substeps = DEFAULT_SUBSTEPS
     }
+
+    if physics_system.tick_rate <= 0 {
+        physics_system.tick_rate = DEFAULT_TICK_RATE
+    }
+
+    physics_system.accumulator = 0
 
     b2.SetLengthUnitsPerMeter(physics_system.units_per_meter)
 
@@ -62,6 +72,7 @@ PhysicsSystemDestroy :: proc() {
     b2.DestroyWorld(physics_system.world)
     physics_system.initialized = false
     physics_system.world = {}
+    physics_system.accumulator = 0
 }
 
 PhysicsSystemClear :: proc() {
@@ -80,7 +91,14 @@ PhysicsSystemUpdate :: proc(dt: f32) {
         return
     }
 
-    b2.World_Step(physics_system.world, dt, c.int(physics_system.substeps))
+    frame_time := min(dt, MAX_FRAME_TIME)
+    tick_dt := 1 / physics_system.tick_rate
+    physics_system.accumulator += frame_time
+
+    for physics_system.accumulator >= tick_dt {
+        b2.World_Step(physics_system.world, tick_dt, c.int(physics_system.substeps))
+        physics_system.accumulator -= tick_dt
+    }
 }
 
 PhysicsSystemIsDebugDraw :: proc "contextless" () -> bool {
@@ -138,6 +156,7 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
         { "getContactEvents", _get_contact_events },
         { "getSensorEvents",  _get_sensor_events },
         { "getSubsteps",      _get_substeps },
+        { "getTickRate",      _get_tick_rate },
         { "getUnitsPerMeter", _get_units_per_meter },
         { "init",             _init },
         { "isDebugDraw",      _is_debug_draw },
@@ -147,6 +166,7 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
         { "setGravity",       _set_gravity },
         { "setDebugDraw",     _set_debug_draw },
         { "setSubsteps",      _set_substeps },
+        { "setTickRate",      _set_tick_rate },
         { "setUnitsPerMeter", _set_units_per_meter },
         { "step",             _step },
         { nil, nil },
@@ -154,6 +174,8 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
 
     physics_system.substeps = DEFAULT_SUBSTEPS
     physics_system.units_per_meter = DEFAULT_UNITS_PER_METER
+    physics_system.tick_rate = DEFAULT_TICK_RATE
+    physics_system.accumulator = 0
     physics_system.debug_draw = false
     physics_system.bodies = make([dynamic]^PhysicsBody)
 
@@ -529,6 +551,12 @@ _get_substeps :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_get_tick_rate :: proc "c" (L: ^lua.State) -> i32 {
+    lua.pushnumber(L, lua.Number(physics_system.tick_rate))
+    return 1
+}
+
+@(private="file")
 _get_units_per_meter :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushnumber(L, lua.Number(physics_system.units_per_meter))
     return 1
@@ -632,6 +660,19 @@ _set_substeps :: proc "c" (L: ^lua.State) -> i32 {
     }
 
     physics_system.substeps = substeps
+
+    return 0
+}
+
+@(private="file")
+_set_tick_rate :: proc "c" (L: ^lua.State) -> i32 {
+    tick_rate := f32(lua.L_checknumber(L, 1))
+    if tick_rate <= 0 {
+        return i32(lua.L_argerror(L, 1, "tick rate must be > 0"))
+    }
+
+    physics_system.tick_rate = tick_rate
+    physics_system.accumulator = 0
 
     return 0
 }

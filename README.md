@@ -569,13 +569,14 @@ KaptanPhysics.init()
 
 Physics uses the same world coordinate model as rendering. Positive `x` moves right, positive `y` moves down, and `{0, 0}` is the world center. A physics body position can be copied directly to a sprite on a camera-attached layer.
 
-Physics is updated automatically by Kaptan while the window loop is running. In the current implementation, physics steps once per rendered frame using the window frame time. A later fixed-step update will make physics tick at 60 Hz independently of rendering.
+Physics is updated automatically by Kaptan while the window loop is running. It uses a fixed timestep with a default tick rate of 60 Hz, so physics stays stable when rendering frame time varies.
 
 Use `KaptanPhysics.step(dt)` only for scripts that do not open a window, such as smoke tests or offline simulations. Do not call it inside `KaptanWindow.setLoopCallback`, because the window loop already steps physics automatically.
 
 ```lua
 KaptanPhysics.setGravity(0, 0)
 KaptanPhysics.setSubsteps(2)
+KaptanPhysics.setTickRate(60)
 ```
 
 `KaptanPhysics.setUnitsPerMeter(value)` configures Box2D's length scale. It must be called before `KaptanPhysics.init()`. The default is `64` Kaptan units per meter.
@@ -933,10 +934,12 @@ List of available functions:
 * KaptanPhysics.getContactEvents()
 * KaptanPhysics.getSensorEvents()
 * KaptanPhysics.getSubsteps()
+* KaptanPhysics.getTickRate()
 * KaptanPhysics.getUnitsPerMeter()
 * KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setDebugDraw(enabled)
 * KaptanPhysics.setSubsteps(count)
+* KaptanPhysics.setTickRate(hz)
 * KaptanPhysics.setUnitsPerMeter(value)
 * KaptanPhysics.step(dt)  -- non-window/manual scripts only
 
