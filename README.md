@@ -559,6 +559,27 @@ Use `KaptanAudioSystem.clear()` to release all registered channels when changing
 KaptanAudioSystem.clear()
 ```
 
+## Physics System
+
+Physics initialization is explicit. Call `KaptanPhysics.init()` before creating or updating physics objects.
+
+```lua
+KaptanPhysics.init()
+```
+
+Physics uses the same world coordinate model as rendering. Positive `x` moves right, positive `y` moves down, and `{0, 0}` is the world center. A physics body position can be copied directly to a sprite on a camera-attached layer.
+
+Physics is updated automatically by Kaptan while the window loop is running. In the current implementation, physics steps once per rendered frame using the window frame time. A later fixed-step update will make physics tick at 60 Hz independently of rendering.
+
+```lua
+KaptanPhysics.setGravity(0, 0)
+KaptanPhysics.setSubsteps(2)
+```
+
+`KaptanPhysics.setUnitsPerMeter(value)` configures Box2D's length scale. It must be called before `KaptanPhysics.init()`. The default is `64` Kaptan units per meter.
+
+Use `KaptanPhysics.clear()` to reset the world while keeping physics initialized. Use `KaptanPhysics.destroy()` when physics is no longer needed.
+
 ## Input System
 
 Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
@@ -782,6 +803,19 @@ List of available functions:
 * channel:setLoop(loop)
 * KaptanAudioChannel.SOUND
 * KaptanAudioChannel.MUSIC
+
+### Physics
+
+* KaptanPhysics.init()
+* KaptanPhysics.destroy()
+* KaptanPhysics.clear()
+* KaptanPhysics.isReady()
+* KaptanPhysics.getGravity()
+* KaptanPhysics.getSubsteps()
+* KaptanPhysics.getUnitsPerMeter()
+* KaptanPhysics.setGravity(x, y)
+* KaptanPhysics.setSubsteps(count)
+* KaptanPhysics.setUnitsPerMeter(value)
 
 ### Keyboard
 

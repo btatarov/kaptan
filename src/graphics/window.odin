@@ -7,6 +7,7 @@ import rl "vendor:raylib"
 
 import "../audio"
 import "../core"
+import "../physics"
 
 Window :: struct {
     title:  cstring,
@@ -82,6 +83,9 @@ WindowMainLoop :: proc() {
 
         // audio
         audio.AudioSystemUpdate()
+
+        // physics
+        physics.PhysicsSystemUpdate(rl.GetFrameTime())
 
         // rendering
         RendererDraw()

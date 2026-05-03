@@ -9,6 +9,7 @@ import "audio"
 import "core"
 import "graphics"
 import "input"
+import "physics"
 
 main :: proc() {
     core.InitContext()
@@ -35,8 +36,6 @@ main :: proc() {
     L := core.InitLuaState()
 
     graphics.WindowLuaBind(L)
-    audio.AudioSystemLuaBind(L)
-    audio.AudioChannelLuaBind(L)
     graphics.RendererLuaBind(L)
     graphics.LayerLuaBind(L)
     graphics.SpriteLuaBind(L)
@@ -45,8 +44,6 @@ main :: proc() {
     graphics.CameraLuaBind(L)
     defer {
         graphics.CameraLuaUnbind(L)
-        audio.AudioChannelLuaUnbind(L)
-        audio.AudioSystemLuaUnbind(L)
         graphics.TextLuaUnbind(L)
         graphics.DrawLuaUnbind(L)
         graphics.SpriteLuaUnbind(L)
@@ -64,6 +61,17 @@ main :: proc() {
         input.KeyboardLuaUnbind(L)
     }
 
+    audio.AudioSystemLuaBind(L)
+    audio.AudioChannelLuaBind(L)
+    defer {
+        audio.AudioChannelLuaUnbind(L)
+        audio.AudioSystemLuaUnbind(L)
+    }
+
+    physics.PhysicsLuaBind(L)
+    defer physics.PhysicsLuaUnbind(L)
+
+    // registered last so Lua __gc runs before subsystem resources are torn down
     defer core.DestroyLuaState(L)
 
     if len(os.args) > 1 {
