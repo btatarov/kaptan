@@ -68,6 +68,9 @@ WindowMainLoop :: proc() {
     log.debugf("KaptanWindow: MainLoop")
 
     for ! window.close && ! rl.WindowShouldClose() {
+        // physics
+        physics.PhysicsSystemUpdate(rl.GetFrameTime())
+
         // logic
         if loop_callback_ref != lua.REFNIL {
             L := core.GetLuaState()
@@ -83,9 +86,6 @@ WindowMainLoop :: proc() {
 
         // audio
         audio.AudioSystemUpdate()
-
-        // physics
-        physics.PhysicsSystemUpdate(rl.GetFrameTime())
 
         // rendering
         RendererDraw()
