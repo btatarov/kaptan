@@ -7,6 +7,7 @@ import lua "vendor:lua/5.4"
 import rl "vendor:raylib"
 
 import "../core"
+import "../physics"
 
 Renderer :: struct {
     clear_color: rl.Color,
@@ -91,6 +92,14 @@ RendererDraw :: proc() {
 
     if active_mode != .None {
         rl.EndMode2D()
+    }
+
+    when ODIN_DEBUG {
+        if physics.PhysicsSystemIsDebugDraw() {
+            rl.BeginMode2D(GetCamera()^)
+            physics.PhysicsSystemDebugDraw()
+            rl.EndMode2D()
+        }
     }
 
     // FPS counter

@@ -2,9 +2,11 @@ package physics
 
 import "core:c"
 import "core:log"
+import "core:math"
 
 import b2 "vendor:box2d"
 import lua "vendor:lua/5.4"
+import rl "vendor:raylib"
 
 import "../core"
 
@@ -14,6 +16,7 @@ PhysicsSystem :: struct {
     bodies:          [dynamic]^PhysicsBody,
     substeps:        i32,
     units_per_meter: f32,
+    debug_draw:      bool,
 }
 
 PhysicsQueryContext :: struct {
@@ -80,6 +83,33 @@ PhysicsSystemUpdate :: proc(dt: f32) {
     b2.World_Step(physics_system.world, dt, c.int(physics_system.substeps))
 }
 
+PhysicsSystemIsDebugDraw :: proc "contextless" () -> bool {
+    return physics_system.debug_draw
+}
+
+PhysicsSystemDebugDraw :: proc() {
+    if ! physics_system.initialized || ! physics_system.debug_draw {
+        return
+    }
+
+    draw := b2.DefaultDebugDraw()
+    draw.DrawPolygonFcn = debug_draw_polygon
+    draw.DrawSolidPolygonFcn = debug_draw_solid_polygon
+    draw.DrawCircleFcn = debug_draw_circle
+    draw.DrawSolidCircleFcn = debug_draw_solid_circle
+    draw.DrawSolidCapsuleFcn = debug_draw_solid_capsule
+    draw.DrawSegmentFcn = debug_draw_segment
+    draw.DrawTransformFcn = debug_draw_transform
+    draw.DrawPointFcn = debug_draw_point
+    draw.drawShapes = true
+    draw.drawJoints = true
+    draw.drawBounds = false
+    draw.drawContacts = true
+    draw.drawContactNormals = true
+
+    b2.World_Draw(physics_system.world, &draw)
+}
+
 PhysicsSystemStep :: proc "contextless" (L: ^lua.State, dt: f32) {
     PhysicsSystemRequireReady(L)
 
@@ -110,10 +140,12 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
         { "getSubsteps",      _get_substeps },
         { "getUnitsPerMeter", _get_units_per_meter },
         { "init",             _init },
+        { "isDebugDraw",      _is_debug_draw },
         { "isReady",          _is_ready },
         { "queryAABB",        _query_aabb },
         { "raycast",          _raycast },
         { "setGravity",       _set_gravity },
+        { "setDebugDraw",     _set_debug_draw },
         { "setSubsteps",      _set_substeps },
         { "setUnitsPerMeter", _set_units_per_meter },
         { "step",             _step },
@@ -122,6 +154,7 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
 
     physics_system.substeps = DEFAULT_SUBSTEPS
     physics_system.units_per_meter = DEFAULT_UNITS_PER_METER
+    physics_system.debug_draw = false
     physics_system.bodies = make([dynamic]^PhysicsBody)
 
     core.LuaBindSingleton(L, "KaptanPhysics", &reg_table)
@@ -285,6 +318,122 @@ push_ray_result :: proc(L: ^lua.State, result: b2.RayResult) {
 }
 
 @(private="file")
+debug_color :: proc "contextless" (color: b2.HexColor, alpha: u8 = 255) -> rl.Color {
+    value := u32(color)
+    return rl.Color{
+        u8((value >> 16) & 0xff),
+        u8((value >> 8) & 0xff),
+        u8(value & 0xff),
+        alpha,
+    }
+}
+
+@(private="file")
+debug_vec :: proc "contextless" (v: b2.Vec2) -> rl.Vector2 {
+    return rl.Vector2{v.x, v.y}
+}
+
+@(private="file")
+debug_draw_polyline :: proc "contextless" (vertices: [^]b2.Vec2, vertex_count: c.int, color: rl.Color, closed: bool) {
+    if vertex_count < 2 {
+        return
+    }
+
+    for i := c.int(0); i < vertex_count - 1; i += 1 {
+        rl.DrawLineEx(debug_vec(vertices[i]), debug_vec(vertices[i + 1]), 1.5, color)
+    }
+
+    if closed {
+        rl.DrawLineEx(debug_vec(vertices[vertex_count - 1]), debug_vec(vertices[0]), 1.5, color)
+    }
+}
+
+@(private="file")
+debug_draw_polygon :: proc "c" (vertices: [^]b2.Vec2, vertex_count: c.int, color: b2.HexColor, ctx: rawptr) {
+    debug_draw_polyline(vertices, vertex_count, debug_color(color), true)
+}
+
+@(private="file")
+debug_draw_solid_polygon :: proc "c" (transform: b2.Transform, vertices: [^]b2.Vec2, vertex_count: c.int, radius: f32, color: b2.HexColor, ctx: rawptr) {
+    if vertex_count < 2 {
+        return
+    }
+
+    fill := debug_color(color, 48)
+    outline := debug_color(color)
+    origin := debug_vec(b2.TransformPoint(transform, vertices[0]))
+    for i := c.int(1); i < vertex_count - 1; i += 1 {
+        rl.DrawTriangle(origin, debug_vec(b2.TransformPoint(transform, vertices[i + 1])), debug_vec(b2.TransformPoint(transform, vertices[i])), fill)
+    }
+
+    for i := c.int(0); i < vertex_count - 1; i += 1 {
+        rl.DrawLineEx(debug_vec(b2.TransformPoint(transform, vertices[i])), debug_vec(b2.TransformPoint(transform, vertices[i + 1])), 1.5, outline)
+    }
+    rl.DrawLineEx(debug_vec(b2.TransformPoint(transform, vertices[vertex_count - 1])), debug_vec(b2.TransformPoint(transform, vertices[0])), 1.5, outline)
+}
+
+@(private="file")
+debug_draw_circle :: proc "c" (center: b2.Vec2, radius: f32, color: b2.HexColor, ctx: rawptr) {
+    rl.DrawCircleLinesV(debug_vec(center), radius, debug_color(color))
+}
+
+@(private="file")
+debug_draw_solid_circle :: proc "c" (transform: b2.Transform, radius: f32, color: b2.HexColor, ctx: rawptr) {
+    center := debug_vec(transform.p)
+    fill := debug_color(color, 48)
+    outline := debug_color(color)
+    axis := debug_vec(transform.p + b2.RotateVector(transform.q, b2.Vec2{radius, 0}))
+    rl.DrawCircleV(center, radius, fill)
+    rl.DrawCircleLinesV(center, radius, outline)
+    rl.DrawLineEx(center, axis, 1.5, outline)
+}
+
+@(private="file")
+debug_draw_solid_capsule :: proc "c" (p1, p2: b2.Vec2, radius: f32, color: b2.HexColor, ctx: rawptr) {
+    draw_color := debug_color(color)
+    fill := debug_color(color, 48)
+    a := debug_vec(p1)
+    b := debug_vec(p2)
+    direction := p2 - p1
+    length := math.sqrt(direction.x * direction.x + direction.y * direction.y)
+
+    if length <= 0 {
+        rl.DrawCircleV(a, radius, fill)
+        rl.DrawCircleLinesV(a, radius, draw_color)
+        return
+    }
+
+    normal := rl.Vector2{-direction.y / length * radius, direction.x / length * radius}
+    rl.DrawTriangle(rl.Vector2{a.x + normal.x, a.y + normal.y}, rl.Vector2{b.x + normal.x, b.y + normal.y}, rl.Vector2{b.x - normal.x, b.y - normal.y}, fill)
+    rl.DrawTriangle(rl.Vector2{a.x + normal.x, a.y + normal.y}, rl.Vector2{b.x - normal.x, b.y - normal.y}, rl.Vector2{a.x - normal.x, a.y - normal.y}, fill)
+    rl.DrawCircleV(a, radius, fill)
+    rl.DrawCircleV(b, radius, fill)
+    rl.DrawCircleLinesV(a, radius, draw_color)
+    rl.DrawCircleLinesV(b, radius, draw_color)
+    rl.DrawLineEx(rl.Vector2{a.x + normal.x, a.y + normal.y}, rl.Vector2{b.x + normal.x, b.y + normal.y}, 1.5, draw_color)
+    rl.DrawLineEx(rl.Vector2{a.x - normal.x, a.y - normal.y}, rl.Vector2{b.x - normal.x, b.y - normal.y}, 1.5, draw_color)
+}
+
+@(private="file")
+debug_draw_segment :: proc "c" (p1, p2: b2.Vec2, color: b2.HexColor, ctx: rawptr) {
+    rl.DrawLineEx(debug_vec(p1), debug_vec(p2), 1.5, debug_color(color))
+}
+
+@(private="file")
+debug_draw_transform :: proc "c" (transform: b2.Transform, ctx: rawptr) {
+    origin := transform.p
+    x_axis := origin + b2.RotateVector(transform.q, b2.Vec2{24, 0})
+    y_axis := origin + b2.RotateVector(transform.q, b2.Vec2{0, 24})
+    rl.DrawLineEx(debug_vec(origin), debug_vec(x_axis), 2, rl.RED)
+    rl.DrawLineEx(debug_vec(origin), debug_vec(y_axis), 2, rl.GREEN)
+}
+
+@(private="file")
+debug_draw_point :: proc "c" (p: b2.Vec2, size: f32, color: b2.HexColor, ctx: rawptr) {
+    rl.DrawCircleV(debug_vec(p), max(size * 0.5, 1), debug_color(color))
+}
+
+@(private="file")
 _clear :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
@@ -394,6 +543,12 @@ _init :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_is_debug_draw :: proc "c" (L: ^lua.State) -> i32 {
+    lua.pushboolean(L, b32(physics_system.debug_draw))
+    return 1
+}
+
+@(private="file")
 _is_ready :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(physics_system.initialized && b2.World_IsValid(physics_system.world)))
     return 1
@@ -460,6 +615,12 @@ _set_gravity :: proc "c" (L: ^lua.State) -> i32 {
     }
     b2.World_SetGravity(physics_system.world, gravity)
 
+    return 0
+}
+
+@(private="file")
+_set_debug_draw :: proc "c" (L: ^lua.State) -> i32 {
+    physics_system.debug_draw = bool(lua.toboolean(L, 1))
     return 0
 }
 

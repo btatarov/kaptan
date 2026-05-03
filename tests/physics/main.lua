@@ -11,6 +11,11 @@ local gx, gy = KaptanPhysics.getGravity()
 print('gravity', gx, gy)
 print('substeps', KaptanPhysics.getSubsteps())
 print('units per meter', KaptanPhysics.getUnitsPerMeter())
+print('debug draw before set', KaptanPhysics.isDebugDraw())
+KaptanPhysics.setDebugDraw(true)
+print('debug draw after set', KaptanPhysics.isDebugDraw())
+KaptanPhysics.setDebugDraw(false)
+print('debug draw after clear', KaptanPhysics.isDebugDraw())
 
 local CATEGORY_PLAYER = 1 << 0
 local CATEGORY_ENEMY = 1 << 1

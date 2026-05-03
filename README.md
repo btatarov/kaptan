@@ -673,6 +673,14 @@ if hit and hit.shape:getTag() == "enemy_hitbox" then
 end
 ```
 
+Enable debug drawing in debug builds to render physics shapes as a world-space overlay after normal layers. It uses the main camera and does not require a `KaptanLayer`.
+
+```lua
+KaptanPhysics.setDebugDraw(true)
+```
+
+Debug draw is intended for development diagnostics, not game visuals. It only appears while a window is open.
+
 Use category and mask bits to control which shapes collide or appear in queries:
 
 ```lua
@@ -917,6 +925,7 @@ List of available functions:
 * KaptanPhysics.init()
 * KaptanPhysics.destroy()
 * KaptanPhysics.clear()
+* KaptanPhysics.isDebugDraw()
 * KaptanPhysics.isReady()
 * KaptanPhysics.queryAABB(x, y, width, height, options)
 * KaptanPhysics.raycast(x1, y1, x2, y2, options)
@@ -926,6 +935,7 @@ List of available functions:
 * KaptanPhysics.getSubsteps()
 * KaptanPhysics.getUnitsPerMeter()
 * KaptanPhysics.setGravity(x, y)
+* KaptanPhysics.setDebugDraw(enabled)
 * KaptanPhysics.setSubsteps(count)
 * KaptanPhysics.setUnitsPerMeter(value)
 * KaptanPhysics.step(dt)  -- non-window/manual scripts only
