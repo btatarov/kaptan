@@ -589,6 +589,17 @@ print(enemy_body:isValid())
 
 `body:destroy()` explicitly removes the body from the physics world. `KaptanPhysics.clear()` and `KaptanPhysics.destroy()` invalidate all existing body handles, so `body:isValid()` returns `false` after the world is cleared or destroyed.
 
+Body positions use Kaptan world coordinates. Rotation is exposed in degrees, matching sprites, text, draw shapes, and the camera. Linear velocity uses Kaptan units per second.
+
+```lua
+enemy_body:setPos(0, 0)
+enemy_body:setVelocity(120, 0)
+enemy_body:setFixedRotation(true)
+
+local x, y = enemy_body:getPos()
+enemy_sprite:setPos(x, y)
+```
+
 ## Input System
 
 Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
@@ -830,9 +841,27 @@ List of available functions:
 
 * body = KaptanBody.new(kind)
 * body:destroy()
+* body:getAngularDamping()
+* body:getAngularVelocity()
+* body:getLinearDamping()
+* body:getPos()
+* body:getRot()
 * body:getType()
+* body:getVelocity()
+* body:isBullet()
+* body:isEnabled()
+* body:isFixedRotation()
 * body:isValid()
+* body:setAngularDamping(value)
+* body:setAngularVelocity(value)
+* body:setBullet(enabled)
+* body:setEnabled(enabled)
+* body:setFixedRotation(enabled)
+* body:setLinearDamping(value)
+* body:setPos(x, y)
+* body:setRot(angle)
 * body:setType(kind)
+* body:setVelocity(x, y)
 * KaptanBody.STATIC
 * KaptanBody.KINEMATIC
 * KaptanBody.DYNAMIC
