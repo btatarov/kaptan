@@ -14,7 +14,7 @@ PhysicsShape :: struct {
 }
 
 InitPhysicsShape :: proc(shape: ^PhysicsShape, id: b2.ShapeId, body: ^PhysicsBody) {
-    log.debugf("KaptanShape: Init")
+    log.debugf("KaptanPhysicsShape: Init")
 
     shape.id = id
     shape.body = body
@@ -27,7 +27,7 @@ DestroyPhysicsShape :: proc(shape: ^PhysicsShape) {
     }
 
     if ! shape.is_gone && b2.Shape_IsValid(shape.id) {
-        log.debugf("KaptanShape: Destroy")
+        log.debugf("KaptanPhysicsShape: Destroy")
         b2.DestroyShape(shape.id, true)
     }
 
@@ -64,7 +64,7 @@ PhysicsShapeIsValid :: proc "contextless" (shape: ^PhysicsShape) -> bool {
 }
 
 PhysicsShapeFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^PhysicsShape {
-    return (^PhysicsShape)(core.LuaUserdataHandle(L, idx, "KaptanShapeMT"))
+    return (^PhysicsShape)(core.LuaUserdataHandle(L, idx, "KaptanPhysicsShapeMT"))
 }
 
 PhysicsShapeLuaBind :: proc(L: ^lua.State) {
@@ -78,7 +78,7 @@ PhysicsShapeLuaBind :: proc(L: ^lua.State) {
         { nil, nil },
     }
 
-    core.LuaBindClass(L, "KaptanShape", &static_reg_table, &instance_reg_table, __gc)
+    core.LuaBindClass(L, "KaptanPhysicsShape", &static_reg_table, &instance_reg_table, __gc)
 }
 
 PhysicsShapeLuaUnbind :: proc(L: ^lua.State) {
@@ -88,7 +88,7 @@ PhysicsShapeLuaUnbind :: proc(L: ^lua.State) {
 PhysicsShapePushLua :: proc(L: ^lua.State, shape: ^PhysicsShape) {
     handle := (^^PhysicsShape)(lua.newuserdata(L, size_of(^PhysicsShape)))
     handle^ = shape
-    core.LuaBindClassMetatable(L, "KaptanShape")
+    core.LuaBindClassMetatable(L, "KaptanPhysicsShape")
 }
 
 @(private="file")

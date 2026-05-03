@@ -12,7 +12,7 @@ print('gravity', gx, gy)
 print('substeps', KaptanPhysics.getSubsteps())
 print('units per meter', KaptanPhysics.getUnitsPerMeter())
 
-local body = KaptanBody.new(KaptanBody.DYNAMIC)
+local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
 print('body valid after create', body:isValid())
 print('body type after create', body:getType())
 
@@ -51,14 +51,14 @@ print('body enabled after disable', body:isEnabled())
 body:setEnabled(true)
 print('body enabled after enable', body:isEnabled())
 
-body:setType(KaptanBody.KINEMATIC)
+body:setType(KaptanPhysicsBody.KINEMATIC)
 print('body type after set', body:getType())
 
 body:destroy()
 print('body valid after destroy', body:isValid())
 print('box valid after body destroy', box:isValid())
 
-local cleared_body = KaptanBody.new(KaptanBody.STATIC)
+local cleared_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
 local cleared_shape = cleared_body:addBox(10, 10)
 print('cleared body valid before clear', cleared_body:isValid())
 print('cleared shape valid before clear', cleared_shape:isValid())

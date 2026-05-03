@@ -22,7 +22,7 @@ PhysicsBodyKind :: enum u32 {
 }
 
 InitPhysicsBody :: proc(body: ^PhysicsBody, id: b2.BodyId) {
-    log.debugf("KaptanBody: Init")
+    log.debugf("KaptanPhysicsBody: Init")
 
     body.id = id
     body.shapes = make([dynamic]^PhysicsShape)
@@ -35,7 +35,7 @@ DestroyPhysicsBody :: proc(body: ^PhysicsBody) {
     }
 
     if ! body.is_gone && b2.Body_IsValid(body.id) {
-        log.debugf("KaptanBody: Destroy")
+        log.debugf("KaptanPhysicsBody: Destroy")
         invalidate_body_shapes(body)
         b2.DestroyBody(body.id)
     }
@@ -72,7 +72,7 @@ PhysicsBodyIsValid :: proc "contextless" (body: ^PhysicsBody) -> bool {
 }
 
 PhysicsBodyFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^PhysicsBody {
-    return (^PhysicsBody)(core.LuaUserdataHandle(L, idx, "KaptanBodyMT"))
+    return (^PhysicsBody)(core.LuaUserdataHandle(L, idx, "KaptanPhysicsBodyMT"))
 }
 
 PhysicsBodyLuaBind :: proc(L: ^lua.State) {
@@ -114,7 +114,7 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
     constants["KINEMATIC"] = u32(PhysicsBodyKind.Kinematic)
     constants["DYNAMIC"] = u32(PhysicsBodyKind.Dynamic)
 
-    core.LuaBindClass(L, "KaptanBody", &static_reg_table, &instance_reg_table, &constants, __gc)
+    core.LuaBindClass(L, "KaptanPhysicsBody", &static_reg_table, &instance_reg_table, &constants, __gc)
 }
 
 PhysicsBodyLuaUnbind :: proc(L: ^lua.State) {
@@ -153,7 +153,7 @@ body_kind_from_box2d :: proc "contextless" (kind: b2.BodyType) -> PhysicsBodyKin
 body_kind_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> PhysicsBodyKind {
     kind := PhysicsBodyKind(lua.L_checkinteger(L, idx))
     if kind != .Static && kind != .Kinematic && kind != .Dynamic {
-        lua.L_argerror(L, c.int(idx), "KaptanBody.STATIC, KaptanBody.KINEMATIC, or KaptanBody.DYNAMIC expected")
+        lua.L_argerror(L, c.int(idx), "KaptanPhysicsBody.STATIC, KaptanPhysicsBody.KINEMATIC, or KaptanPhysicsBody.DYNAMIC expected")
     }
 
     return kind
@@ -162,7 +162,7 @@ body_kind_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> PhysicsBod
 @(private="file")
 check_body_valid :: proc "contextless" (L: ^lua.State, body: ^PhysicsBody) {
     if ! PhysicsBodyIsValid(body) {
-        lua.L_error(L, "KaptanBody is no longer valid")
+        lua.L_error(L, "KaptanPhysicsBody is no longer valid")
     }
 }
 
@@ -213,7 +213,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^PhysicsBody)(lua.newuserdata(L, size_of(^PhysicsBody)))
     handle^ = body
-    core.LuaBindClassMetatable(L, "KaptanBody")
+    core.LuaBindClassMetatable(L, "KaptanPhysicsBody")
 
     return 1
 }

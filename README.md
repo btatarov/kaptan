@@ -580,10 +580,10 @@ KaptanPhysics.setSubsteps(2)
 
 Use `KaptanPhysics.clear()` to reset the world while keeping physics initialized. Use `KaptanPhysics.destroy()` when physics is no longer needed.
 
-Create bodies with `KaptanBody.new(kind)`. Body kinds are `KaptanBody.STATIC`, `KaptanBody.KINEMATIC`, and `KaptanBody.DYNAMIC`.
+Create bodies with `KaptanPhysicsBody.new(kind)`. Body kinds are `KaptanPhysicsBody.STATIC`, `KaptanPhysicsBody.KINEMATIC`, and `KaptanPhysicsBody.DYNAMIC`.
 
 ```lua
-local enemy_body = KaptanBody.new(KaptanBody.DYNAMIC)
+local enemy_body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
 print(enemy_body:isValid())
 ```
 
@@ -848,7 +848,7 @@ List of available functions:
 
 #### Physics Body
 
-* body = KaptanBody.new(kind)
+* body = KaptanPhysicsBody.new(kind)
 * body:addBox(width, height)
 * body:addCircle(radius)
 * body:destroy()
@@ -873,9 +873,9 @@ List of available functions:
 * body:setRot(angle)
 * body:setType(kind)
 * body:setVelocity(x, y)
-* KaptanBody.STATIC
-* KaptanBody.KINEMATIC
-* KaptanBody.DYNAMIC
+* KaptanPhysicsBody.STATIC
+* KaptanPhysicsBody.KINEMATIC
+* KaptanPhysicsBody.DYNAMIC
 
 #### Physics Shape
 
