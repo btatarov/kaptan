@@ -107,7 +107,7 @@ SpriteLuaUnbind :: proc(L: ^lua.State) {
 
 @(private="file")
 sprite_draw :: proc(sprite: ^Sprite) {
-    if !sprite.is_gone && sprite.visible {
+    if ! sprite.is_gone && sprite.visible {
         visible_left := -f32(sprite.width) * 0.5 + sprite.offset.x
         visible_top := -f32(sprite.height) * 0.5 + sprite.offset.y
 

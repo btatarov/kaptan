@@ -142,7 +142,7 @@ LuaBindSingletonWithConstants :: proc(
 }
 
 LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
-    if !lua.isuserdata(L, idx) {
+    if ! lua.isuserdata(L, idx) {
         return false
     }
 

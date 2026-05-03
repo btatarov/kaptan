@@ -223,7 +223,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
 
     layer := LayerFromLua(L, 1)
     item, ok := item_from_lua(L, 2)
-    if !ok {
+    if ! ok {
         return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, or KaptanText expected"))
     }
 
@@ -258,7 +258,7 @@ _remove :: proc "c" (L: ^lua.State) -> i32 {
 
     layer := LayerFromLua(L, 1)
     target, ok := item_from_lua(L, 2)
-    if !ok {
+    if ! ok {
         return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, or KaptanText expected"))
     }
 
