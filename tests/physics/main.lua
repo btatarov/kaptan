@@ -17,8 +17,10 @@ local CATEGORY_ENEMY = 1 << 1
 local CATEGORY_WALL = 1 << 2
 
 local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
+body:setTag('player')
 print('body valid after create', body:isValid())
 print('body type after create', body:getType())
+print('body tag after set', body:getTag())
 
 local circle = body:addCircle(12)
 local box = body:addBox(24, 32)
@@ -43,13 +45,16 @@ box:setMask(CATEGORY_PLAYER | CATEGORY_WALL)
 box:setGroup(-1)
 box:setContactEvents(true)
 box:setHitEvents(true)
+box:setTag('enemy')
 
 local event_body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
 event_body:setPos(10, 20)
 local event_shape = event_body:addBox(10, 10, { contactEvents = true })
+event_shape:setTag('event-box')
 local sensor_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
 sensor_body:setPos(10, 20)
 local event_sensor = sensor_body:addCircle(20, { sensor = true, sensorEvents = true })
+event_sensor:setTag('event-sensor')
 KaptanPhysics.step(1 / 60)
 local contact_events = KaptanPhysics.getContactEvents()
 local sensor_events = KaptanPhysics.getSensorEvents()
@@ -69,6 +74,7 @@ print('query aabb enemy hits', #queried_shapes)
 print('raycast enemy hit', ray_hit ~= nil)
 if ray_hit then
     print('raycast shape valid', ray_hit.shape:isValid())
+    print('raycast shape tag', ray_hit.shape:getTag())
 end
 
 print('box density', box:getDensity())
@@ -79,6 +85,7 @@ print('box mask', box:getMask())
 print('box group', box:getGroup())
 print('box contact events', box:isContactEvents())
 print('box hit events', box:isHitEvents())
+print('box tag', box:getTag())
 
 circle:destroy()
 print('circle valid after destroy', circle:isValid())

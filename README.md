@@ -661,6 +661,18 @@ end
 
 `queryAABB(x, y, width, height, options)` treats `x, y` as the center of the query box. Query options support `category` and `mask` bits. `raycast` returns the closest hit or `nil`.
 
+Use tags to attach game-defined labels to bodies and shapes. Tags have no engine-defined meaning; they are just strings you can read from event/query results.
+
+```lua
+enemy_body:setTag("enemy")
+enemy_shape:setTag("enemy_hitbox")
+
+local hit = KaptanPhysics.raycast(0, 0, 400, 0)
+if hit and hit.shape:getTag() == "enemy_hitbox" then
+    print("hit enemy")
+end
+```
+
 Use category and mask bits to control which shapes collide or appear in queries:
 
 ```lua
@@ -932,6 +944,7 @@ List of available functions:
 * body:getLinearDamping()
 * body:getPos()
 * body:getRot()
+* body:getTag()
 * body:getType()
 * body:getVelocity()
 * body:isBullet()
@@ -946,6 +959,7 @@ List of available functions:
 * body:setLinearDamping(value)
 * body:setPos(x, y)
 * body:setRot(angle)
+* body:setTag(tag)
 * body:setType(kind)
 * body:setVelocity(x, y)
 * KaptanPhysicsBody.STATIC
@@ -961,6 +975,7 @@ List of available functions:
 * shape:getGroup()
 * shape:getMask()
 * shape:getRestitution()
+* shape:getTag()
 * shape:isContactEvents()
 * shape:isHitEvents()
 * shape:isSensor()
@@ -975,6 +990,7 @@ List of available functions:
 * shape:setMask(bits)
 * shape:setRestitution(value)
 * shape:setSensorEvents(enabled)
+* shape:setTag(tag)
 
 ### Keyboard
 

@@ -3,6 +3,7 @@ package physics
 import "core:c"
 import "core:log"
 import "core:math"
+import "core:strings"
 
 import b2 "vendor:box2d"
 import lua "vendor:lua/5.4"
@@ -12,6 +13,7 @@ import "../core"
 PhysicsBody :: struct {
     id:      b2.BodyId,
     shapes:  [dynamic]^PhysicsShape,
+    tag:     cstring,
     is_gone: bool,
 }
 
@@ -26,6 +28,7 @@ InitPhysicsBody :: proc(body: ^PhysicsBody, id: b2.BodyId) {
 
     body.id = id
     body.shapes = make([dynamic]^PhysicsShape)
+    body.tag = nil
     body.is_gone = false
 }
 
@@ -52,6 +55,9 @@ FreePhysicsBody :: proc(body: ^PhysicsBody) {
     }
 
     DestroyPhysicsBody(body)
+    if body.tag != nil {
+        delete(body.tag)
+    }
     delete(body.shapes)
     free(body)
 }
@@ -92,6 +98,7 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
         { "getLinearDamping",      _get_linear_damping },
         { "getPos",                _get_pos },
         { "getRot",                _get_rot },
+        { "getTag",                _get_tag },
         { "getType",               _get_type },
         { "getVelocity",           _get_velocity },
         { "isBullet",              _is_bullet },
@@ -106,6 +113,7 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
         { "setLinearDamping",      _set_linear_damping },
         { "setPos",                _set_pos },
         { "setRot",                _set_rot },
+        { "setTag",                _set_tag },
         { "setType",               _set_type },
         { "setVelocity",           _set_velocity },
         { nil, nil },
@@ -433,6 +441,20 @@ _get_rot :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_get_tag :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    if body.tag == nil {
+        lua.pushstring(L, "")
+    } else {
+        lua.pushstring(L, body.tag)
+    }
+
+    return 1
+}
+
+@(private="file")
 _get_type :: proc "c" (L: ^lua.State) -> i32 {
     body := PhysicsBodyFromLua(L, 1)
     check_body_valid(L, body)
@@ -569,6 +591,21 @@ _set_rot :: proc "c" (L: ^lua.State) -> i32 {
     body := PhysicsBodyFromLua(L, 1)
     check_body_valid(L, body)
     body_set_transform(body, b2.Body_GetPosition(body.id), f32(lua.L_checknumber(L, 2)))
+
+    return 0
+}
+
+@(private="file")
+_set_tag :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    if body.tag != nil {
+        delete(body.tag)
+    }
+    body.tag = strings.clone_to_cstring(string(lua.L_checkstring(L, 2)))
 
     return 0
 }

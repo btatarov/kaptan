@@ -1,6 +1,7 @@
 package physics
 
 import "core:log"
+import "core:strings"
 import b2 "vendor:box2d"
 import lua "vendor:lua/5.4"
 
@@ -14,6 +15,7 @@ PhysicsShapeHandle :: struct {
 PhysicsShape :: struct {
     id:      b2.ShapeId,
     body:    ^PhysicsBody,
+    tag:     cstring,
     refs:    int,
     is_gone: bool,
 }
@@ -23,6 +25,7 @@ InitPhysicsShape :: proc(shape: ^PhysicsShape, id: b2.ShapeId, body: ^PhysicsBod
 
     shape.id = id
     shape.body = body
+    shape.tag = nil
     shape.refs = 0
     shape.is_gone = false
 
@@ -98,6 +101,7 @@ PhysicsShapeLuaBind :: proc(L: ^lua.State) {
         { "getGroup",             _get_group },
         { "getMask",              _get_mask },
         { "getRestitution",       _get_restitution },
+        { "getTag",               _get_tag },
         { "isContactEvents",      _is_contact_events },
         { "isHitEvents",          _is_hit_events },
         { "isSensor",             _is_sensor },
@@ -112,6 +116,7 @@ PhysicsShapeLuaBind :: proc(L: ^lua.State) {
         { "setMask",              _set_mask },
         { "setRestitution",       _set_restitution },
         { "setSensorEvents",      _set_sensor_events },
+        { "setTag",               _set_tag },
         { nil, nil },
     }
 
@@ -150,6 +155,9 @@ release_shape_ref :: proc(shape: ^PhysicsShape) {
 
     shape.refs -= 1
     if shape.refs <= 0 && shape.is_gone {
+        if shape.tag != nil {
+            delete(shape.tag)
+        }
         free(shape)
     }
 }
@@ -270,6 +278,20 @@ _get_restitution :: proc "c" (L: ^lua.State) -> i32 {
     check_shape_valid(L, shape)
 
     lua.pushnumber(L, lua.Number(b2.Shape_GetRestitution(shape.id)))
+
+    return 1
+}
+
+@(private="file")
+_get_tag :: proc "c" (L: ^lua.State) -> i32 {
+    shape := PhysicsShapeFromLua(L, 1)
+    check_shape_valid(L, shape)
+
+    if shape.tag == nil {
+        lua.pushstring(L, "")
+    } else {
+        lua.pushstring(L, shape.tag)
+    }
 
     return 1
 }
@@ -404,6 +426,21 @@ _set_sensor_events :: proc "c" (L: ^lua.State) -> i32 {
     shape := PhysicsShapeFromLua(L, 1)
     check_shape_valid(L, shape)
     b2.Shape_EnableSensorEvents(shape.id, bool(lua.toboolean(L, 2)))
+
+    return 0
+}
+
+@(private="file")
+_set_tag :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    shape := PhysicsShapeFromLua(L, 1)
+    check_shape_valid(L, shape)
+
+    if shape.tag != nil {
+        delete(shape.tag)
+    }
+    shape.tag = strings.clone_to_cstring(string(lua.L_checkstring(L, 2)))
 
     return 0
 }
