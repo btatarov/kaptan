@@ -624,7 +624,7 @@ local pickup_sensor = pickup_body:addCircle(24, {
 
 Sensors are creation-time behavior in Box2D. Use `shape:isSensor()` to inspect a shape, and create a new shape if you need to switch between solid and sensor behavior.
 
-Poll contact and sensor events after a physics step. Contact events require `contactEvents = true` on at least one participating shape. Sensor events require a sensor shape with `sensorEvents = true`.
+Poll contact and sensor events after physics updates. During the automatic window loop, Kaptan keeps the latest update's accumulated events, including all fixed physics ticks that ran during that update. Unpolled automatic events are discarded when the next automatic physics update begins, so event buffers stay bounded. Manual `KaptanPhysics.step(dt)` calls accumulate events until you call `getContactEvents()` or `getSensorEvents()`. Contact events require `contactEvents = true` on at least one participating shape. Sensor events require a sensor shape with `sensorEvents = true`.
 
 ```lua
 for _, event in ipairs(KaptanPhysics.getContactEvents()) do

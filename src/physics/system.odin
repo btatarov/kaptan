@@ -14,6 +14,8 @@ PhysicsSystem :: struct {
     initialized:     bool,
     world:           b2.WorldId,
     bodies:          [dynamic]^PhysicsBody,
+    contact_events:  [dynamic]PhysicsContactEvent,
+    sensor_events:   [dynamic]PhysicsSensorEvent,
     substeps:        i32,
     units_per_meter: f32,
     tick_rate:       f32,
@@ -23,6 +25,32 @@ PhysicsSystem :: struct {
 
 PhysicsQueryContext :: struct {
     shapes: [dynamic]^PhysicsShape,
+}
+
+PhysicsContactEventKind :: enum {
+    Begin,
+    End,
+    Hit,
+}
+
+PhysicsSensorEventKind :: enum {
+    Begin,
+    End,
+}
+
+PhysicsContactEvent :: struct {
+    kind:           PhysicsContactEventKind,
+    shape_a:        ^PhysicsShape,
+    shape_b:        ^PhysicsShape,
+    point:          b2.Vec2,
+    normal:         b2.Vec2,
+    approach_speed: f32,
+}
+
+PhysicsSensorEvent :: struct {
+    kind:    PhysicsSensorEventKind,
+    sensor:  ^PhysicsShape,
+    visitor: ^PhysicsShape,
 }
 
 @(private="file") physics_system: PhysicsSystem
@@ -91,12 +119,15 @@ PhysicsSystemUpdate :: proc(dt: f32) {
         return
     }
 
+    clear_contact_events()
+    clear_sensor_events()
+
     frame_time := min(dt, MAX_FRAME_TIME)
     tick_dt := 1 / physics_system.tick_rate
     physics_system.accumulator += frame_time
 
     for physics_system.accumulator >= tick_dt {
-        b2.World_Step(physics_system.world, tick_dt, c.int(physics_system.substeps))
+        step_world(tick_dt)
         physics_system.accumulator -= tick_dt
     }
 }
@@ -128,14 +159,14 @@ PhysicsSystemDebugDraw :: proc() {
     b2.World_Draw(physics_system.world, &draw)
 }
 
-PhysicsSystemStep :: proc "contextless" (L: ^lua.State, dt: f32) {
+PhysicsSystemStep :: proc(L: ^lua.State, dt: f32) {
     PhysicsSystemRequireReady(L)
 
     if dt <= 0 {
         lua.L_argerror(L, 1, "dt must be > 0")
     }
 
-    b2.World_Step(physics_system.world, dt, c.int(physics_system.substeps))
+    step_world(dt)
 }
 
 PhysicsSystemRequireReady :: proc "contextless" (L: ^lua.State) {
@@ -178,12 +209,18 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
     physics_system.accumulator = 0
     physics_system.debug_draw = false
     physics_system.bodies = make([dynamic]^PhysicsBody)
+    physics_system.contact_events = make([dynamic]PhysicsContactEvent)
+    physics_system.sensor_events = make([dynamic]PhysicsSensorEvent)
 
     core.LuaBindSingleton(L, "KaptanPhysics", &reg_table)
 }
 
 PhysicsLuaUnbind :: proc(L: ^lua.State) {
     PhysicsSystemDestroy()
+    clear_contact_events()
+    clear_sensor_events()
+    delete(physics_system.contact_events)
+    delete(physics_system.sensor_events)
     delete(physics_system.bodies)
 }
 
@@ -207,6 +244,104 @@ invalidate_physics_bodies :: proc() {
     }
 
     clear(&physics_system.bodies)
+}
+
+@(private="file")
+add_shape_event_ref :: proc(shape: ^PhysicsShape) -> ^PhysicsShape {
+    if PhysicsShapeIsValid(shape) {
+        PhysicsShapeAddRef(shape)
+        return shape
+    }
+
+    return nil
+}
+
+@(private="file")
+release_shape_event_ref :: proc(shape: ^PhysicsShape) {
+    if shape != nil {
+        PhysicsShapeReleaseRef(shape)
+    }
+}
+
+@(private="file")
+clear_contact_events :: proc() {
+    for event in physics_system.contact_events {
+        release_shape_event_ref(event.shape_a)
+        release_shape_event_ref(event.shape_b)
+    }
+    clear(&physics_system.contact_events)
+}
+
+@(private="file")
+clear_sensor_events :: proc() {
+    for event in physics_system.sensor_events {
+        release_shape_event_ref(event.sensor)
+        release_shape_event_ref(event.visitor)
+    }
+    clear(&physics_system.sensor_events)
+}
+
+@(private="file")
+step_world :: proc(dt: f32) {
+    b2.World_Step(physics_system.world, dt, c.int(physics_system.substeps))
+    accumulate_contact_events()
+    accumulate_sensor_events()
+}
+
+@(private="file")
+accumulate_contact_events :: proc() {
+    events := b2.World_GetContactEvents(physics_system.world)
+    for i := i32(0); i < events.beginCount; i += 1 {
+        event := events.beginEvents[i]
+        append(&physics_system.contact_events, PhysicsContactEvent{
+            kind = .Begin,
+            shape_a = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdA)),
+            shape_b = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdB)),
+        })
+    }
+
+    for i := i32(0); i < events.endCount; i += 1 {
+        event := events.endEvents[i]
+        append(&physics_system.contact_events, PhysicsContactEvent{
+            kind = .End,
+            shape_a = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdA)),
+            shape_b = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdB)),
+        })
+    }
+
+    for i := i32(0); i < events.hitCount; i += 1 {
+        event := events.hitEvents[i]
+        append(&physics_system.contact_events, PhysicsContactEvent{
+            kind = .Hit,
+            shape_a = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdA)),
+            shape_b = add_shape_event_ref(PhysicsShapeFromId(event.shapeIdB)),
+            point = event.point,
+            normal = event.normal,
+            approach_speed = event.approachSpeed,
+        })
+    }
+}
+
+@(private="file")
+accumulate_sensor_events :: proc() {
+    events := b2.World_GetSensorEvents(physics_system.world)
+    for i := i32(0); i < events.beginCount; i += 1 {
+        event := events.beginEvents[i]
+        append(&physics_system.sensor_events, PhysicsSensorEvent{
+            kind = .Begin,
+            sensor = add_shape_event_ref(PhysicsShapeFromId(event.sensorShapeId)),
+            visitor = add_shape_event_ref(PhysicsShapeFromId(event.visitorShapeId)),
+        })
+    }
+
+    for i := i32(0); i < events.endCount; i += 1 {
+        event := events.endEvents[i]
+        append(&physics_system.sensor_events, PhysicsSensorEvent{
+            kind = .End,
+            sensor = add_shape_event_ref(PhysicsShapeFromId(event.sensorShapeId)),
+            visitor = add_shape_event_ref(PhysicsShapeFromId(event.visitorShapeId)),
+        })
+    }
 }
 
 @(private="file")
@@ -237,38 +372,38 @@ set_event_kind :: proc(L: ^lua.State, table_idx: i32, name: cstring) {
 }
 
 @(private="file")
-push_contact_pair_event :: proc(L: ^lua.State, kind: cstring, shape_id_a, shape_id_b: b2.ShapeId) {
+push_accumulated_contact_pair_event :: proc(L: ^lua.State, kind: cstring, shape_a, shape_b: ^PhysicsShape) {
     lua.createtable(L, 0, 3)
     event_idx := lua.gettop(L)
 
     set_event_kind(L, event_idx, kind)
-    set_event_shape(L, event_idx, "shapeA", PhysicsShapeFromId(shape_id_a))
-    set_event_shape(L, event_idx, "shapeB", PhysicsShapeFromId(shape_id_b))
+    set_event_shape(L, event_idx, "shapeA", shape_a)
+    set_event_shape(L, event_idx, "shapeB", shape_b)
 }
 
 @(private="file")
-push_sensor_event :: proc(L: ^lua.State, kind: cstring, sensor_id, visitor_id: b2.ShapeId) {
+push_accumulated_sensor_event :: proc(L: ^lua.State, kind: cstring, sensor, visitor: ^PhysicsShape) {
     lua.createtable(L, 0, 3)
     event_idx := lua.gettop(L)
 
     set_event_kind(L, event_idx, kind)
-    set_event_shape(L, event_idx, "sensor", PhysicsShapeFromId(sensor_id))
-    set_event_shape(L, event_idx, "visitor", PhysicsShapeFromId(visitor_id))
+    set_event_shape(L, event_idx, "sensor", sensor)
+    set_event_shape(L, event_idx, "visitor", visitor)
 }
 
 @(private="file")
-push_contact_hit_event :: proc(L: ^lua.State, event: b2.ContactHitEvent) {
+push_accumulated_contact_hit_event :: proc(L: ^lua.State, event: PhysicsContactEvent) {
     lua.createtable(L, 0, 9)
     event_idx := lua.gettop(L)
 
     set_event_kind(L, event_idx, "hit")
-    set_event_shape(L, event_idx, "shapeA", PhysicsShapeFromId(event.shapeIdA))
-    set_event_shape(L, event_idx, "shapeB", PhysicsShapeFromId(event.shapeIdB))
+    set_event_shape(L, event_idx, "shapeA", event.shape_a)
+    set_event_shape(L, event_idx, "shapeB", event.shape_b)
     set_event_number(L, event_idx, "x", event.point.x)
     set_event_number(L, event_idx, "y", event.point.y)
     set_event_number(L, event_idx, "normalX", event.normal.x)
     set_event_number(L, event_idx, "normalY", event.normal.y)
-    set_event_number(L, event_idx, "approachSpeed", event.approachSpeed)
+    set_event_number(L, event_idx, "approachSpeed", event.approach_speed)
 }
 
 @(private="file")
@@ -488,30 +623,22 @@ _get_contact_events :: proc "c" (L: ^lua.State) -> i32 {
 
     PhysicsSystemRequireReady(L)
 
-    events := b2.World_GetContactEvents(physics_system.world)
-    count := events.beginCount + events.endCount + events.hitCount
-    lua.createtable(L, c.int(count), 0)
+    lua.createtable(L, c.int(len(physics_system.contact_events)), 0)
 
     out_idx := i32(1)
-    for i := i32(0); i < events.beginCount; i += 1 {
-        event := events.beginEvents[i]
-        push_contact_pair_event(L, "begin", event.shapeIdA, event.shapeIdB)
+    for event in physics_system.contact_events {
+        switch event.kind {
+        case .Begin:
+            push_accumulated_contact_pair_event(L, "begin", event.shape_a, event.shape_b)
+        case .End:
+            push_accumulated_contact_pair_event(L, "end", event.shape_a, event.shape_b)
+        case .Hit:
+            push_accumulated_contact_hit_event(L, event)
+        }
         lua.rawseti(L, -2, lua.Integer(out_idx))
         out_idx += 1
     }
-
-    for i := i32(0); i < events.endCount; i += 1 {
-        event := events.endEvents[i]
-        push_contact_pair_event(L, "end", event.shapeIdA, event.shapeIdB)
-        lua.rawseti(L, -2, lua.Integer(out_idx))
-        out_idx += 1
-    }
-
-    for i := i32(0); i < events.hitCount; i += 1 {
-        push_contact_hit_event(L, events.hitEvents[i])
-        lua.rawseti(L, -2, lua.Integer(out_idx))
-        out_idx += 1
-    }
+    clear_contact_events()
 
     return 1
 }
@@ -522,24 +649,20 @@ _get_sensor_events :: proc "c" (L: ^lua.State) -> i32 {
 
     PhysicsSystemRequireReady(L)
 
-    events := b2.World_GetSensorEvents(physics_system.world)
-    count := events.beginCount + events.endCount
-    lua.createtable(L, c.int(count), 0)
+    lua.createtable(L, c.int(len(physics_system.sensor_events)), 0)
 
     out_idx := i32(1)
-    for i := i32(0); i < events.beginCount; i += 1 {
-        event := events.beginEvents[i]
-        push_sensor_event(L, "begin", event.sensorShapeId, event.visitorShapeId)
+    for event in physics_system.sensor_events {
+        switch event.kind {
+        case .Begin:
+            push_accumulated_sensor_event(L, "begin", event.sensor, event.visitor)
+        case .End:
+            push_accumulated_sensor_event(L, "end", event.sensor, event.visitor)
+        }
         lua.rawseti(L, -2, lua.Integer(out_idx))
         out_idx += 1
     }
-
-    for i := i32(0); i < events.endCount; i += 1 {
-        event := events.endEvents[i]
-        push_sensor_event(L, "end", event.sensorShapeId, event.visitorShapeId)
-        lua.rawseti(L, -2, lua.Integer(out_idx))
-        out_idx += 1
-    }
+    clear_sensor_events()
 
     return 1
 }
@@ -696,6 +819,8 @@ _set_units_per_meter :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _step :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
     PhysicsSystemStep(L, f32(lua.L_checknumber(L, 1)))
     return 0
 }

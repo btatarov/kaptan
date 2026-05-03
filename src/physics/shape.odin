@@ -75,6 +75,16 @@ PhysicsShapeIsValid :: proc "contextless" (shape: ^PhysicsShape) -> bool {
     return shape != nil && ! shape.is_gone && b2.Shape_IsValid(shape.id)
 }
 
+PhysicsShapeAddRef :: proc(shape: ^PhysicsShape) {
+    if shape != nil {
+        shape.refs += 1
+    }
+}
+
+PhysicsShapeReleaseRef :: proc(shape: ^PhysicsShape) {
+    release_shape_ref(shape)
+}
+
 PhysicsShapeFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^PhysicsShape {
     handle := (^PhysicsShapeHandle)(lua.L_checkudata(L, idx, "KaptanPhysicsShapeMT"))
     return handle.shape
@@ -135,33 +145,6 @@ PhysicsShapePushLuaRef :: proc(L: ^lua.State, shape: ^PhysicsShape) {
     physics_shape_push_lua(L, shape, false)
 }
 
-@(private="file")
-physics_shape_push_lua :: proc(L: ^lua.State, shape: ^PhysicsShape, owns: bool) {
-    if shape != nil {
-        shape.refs += 1
-    }
-
-    handle := (^PhysicsShapeHandle)(lua.newuserdata(L, size_of(PhysicsShapeHandle)))
-    handle.shape = shape
-    handle.owns = owns
-    core.LuaBindClassMetatable(L, "KaptanPhysicsShape")
-}
-
-@(private="file")
-release_shape_ref :: proc(shape: ^PhysicsShape) {
-    if shape == nil {
-        return
-    }
-
-    shape.refs -= 1
-    if shape.refs <= 0 && shape.is_gone {
-        if shape.tag != nil {
-            delete(shape.tag)
-        }
-        free(shape)
-    }
-}
-
 PhysicsShapeDefaultDef :: proc "contextless" (L: ^lua.State, options_idx: i32) -> b2.ShapeDef {
     shape_def := b2.DefaultShapeDef()
 
@@ -200,6 +183,31 @@ PhysicsShapeDefaultDef :: proc "contextless" (L: ^lua.State, options_idx: i32) -
     lua.pop(L, 1)
 
     return shape_def
+}
+
+@(private="file")
+physics_shape_push_lua :: proc(L: ^lua.State, shape: ^PhysicsShape, owns: bool) {
+    PhysicsShapeAddRef(shape)
+
+    handle := (^PhysicsShapeHandle)(lua.newuserdata(L, size_of(PhysicsShapeHandle)))
+    handle.shape = shape
+    handle.owns = owns
+    core.LuaBindClassMetatable(L, "KaptanPhysicsShape")
+}
+
+@(private="file")
+release_shape_ref :: proc(shape: ^PhysicsShape) {
+    if shape == nil {
+        return
+    }
+
+    shape.refs -= 1
+    if shape.refs <= 0 && shape.is_gone {
+        if shape.tag != nil {
+            delete(shape.tag)
+        }
+        free(shape)
+    }
 }
 
 @(private="file")
