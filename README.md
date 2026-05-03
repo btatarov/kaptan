@@ -76,15 +76,13 @@ KaptanCamera.setRot(0)
 `KaptanCamera.setPos(x, y)` chooses the world point the camera looks at. With the default pivot, that world point appears at the screen center.
 
 ```lua
--- Put world point {300, 200} at the screen center.
-KaptanCamera.setPos(300, 200)
+KaptanCamera.setPos(300, 200) -- put world point {300, 200} at the screen center
 ```
 
 `KaptanCamera.setPiv(x, y)` moves where the camera target appears on screen, relative to the screen center.
 
 ```lua
--- Keep the camera target 100 pixels to the right of screen center.
-KaptanCamera.setPiv(100, 0)
+KaptanCamera.setPiv(100, 0) -- keep the camera target 100 pixels to the right of screen center
 ```
 
 `KaptanCamera.setZoom(zoom)` zooms camera-attached layers only. Detached GUI layers are not zoomed.
@@ -603,7 +601,7 @@ local x, y = enemy_body:getPos()
 enemy_sprite:setPos(x, y)
 ```
 
-Add shapes to bodies to make them collide. The initial shape API supports circles, boxes, rounded boxes, capsules, and convex polygons.
+Add shapes to bodies to make them collide. Shape creation supports circles, boxes, rounded boxes, capsules, and convex polygons.
 
 ```lua
 local enemy_shape = enemy_body:addCircle(16)
@@ -923,21 +921,21 @@ List of available functions:
 
 ### Physics
 
-* KaptanPhysics.init()
-* KaptanPhysics.destroy()
 * KaptanPhysics.clear()
-* KaptanPhysics.isDebugDraw()
-* KaptanPhysics.isReady()
-* KaptanPhysics.queryAABB(x, y, width, height, options)
-* KaptanPhysics.raycast(x1, y1, x2, y2, options)
-* KaptanPhysics.getGravity()
+* KaptanPhysics.destroy()
 * KaptanPhysics.getContactEvents()
+* KaptanPhysics.getGravity()
 * KaptanPhysics.getSensorEvents()
 * KaptanPhysics.getSubsteps()
 * KaptanPhysics.getTickRate()
 * KaptanPhysics.getUnitsPerMeter()
-* KaptanPhysics.setGravity(x, y)
+* KaptanPhysics.init()
+* KaptanPhysics.isDebugDraw()
+* KaptanPhysics.isReady()
+* KaptanPhysics.queryAABB(x, y, width, height, options)
+* KaptanPhysics.raycast(x1, y1, x2, y2, options)
 * KaptanPhysics.setDebugDraw(enabled)
+* KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setSubsteps(count)
 * KaptanPhysics.setTickRate(hz)
 * KaptanPhysics.setUnitsPerMeter(value)
