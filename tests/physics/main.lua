@@ -7,6 +7,8 @@ local FLOOR_HEIGHT = 70
 local CRATE_SIZE = 30
 local BALL_RADIUS = 15
 local KICK_FRAME = 60 * 3
+local LINEAR_KICK_IMPULSE = 10000000
+local ANGULAR_KICK_IMPULSE = 250000
 
 KaptanWindow.open('Kaptan', WINDOW_WIDTH, WINDOW_HEIGHT)
 KaptanWindow.setVsync(true)
@@ -110,8 +112,8 @@ KaptanWindow.setLoopCallback(function()
     if frames == KICK_FRAME then
         for _ = 1, 10 do
             local entity = scene.dynamic_entities[math.random(1, #scene.dynamic_entities)]
-            entity.body:setVelocity(math.random(-10, 10) * 1000, math.random(-10, 10) * 1000)
-            entity.body:setAngularVelocity(math.random(-10, 10) * 10)
+            entity.body:applyImpulse(math.random(-10, 10) * LINEAR_KICK_IMPULSE, math.random(-10, 10) * LINEAR_KICK_IMPULSE)
+            entity.body:applyAngularImpulse(math.random(-10, 10) * ANGULAR_KICK_IMPULSE)
         end
     end
 

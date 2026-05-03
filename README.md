@@ -592,9 +592,12 @@ print(enemy_body:isValid())
 
 Body positions use Kaptan world coordinates. Rotation is exposed in degrees, matching sprites, text, draw shapes, and the camera. Linear velocity uses Kaptan units per second.
 
+Use forces and impulses to move dynamic bodies through the physics simulation. `applyForce` and `applyImpulse` act at the body's center, while `applyTorque` and `applyAngularImpulse` rotate it.
+
 ```lua
 enemy_body:setPos(0, 0)
 enemy_body:setVelocity(120, 0)
+enemy_body:applyImpulse(300, 0)
 enemy_body:setFixedRotation(true)
 
 local x, y = enemy_body:getPos()
@@ -949,6 +952,10 @@ List of available functions:
 * body:addCapsule(width, height, radius, options)
 * body:addCircle(radius, options)
 * body:addPolygon(points, options)
+* body:applyAngularImpulse(value)
+* body:applyForce(x, y)
+* body:applyImpulse(x, y)
+* body:applyTorque(value)
 * body:destroy()
 * body:getAngularDamping()
 * body:getAngularVelocity()

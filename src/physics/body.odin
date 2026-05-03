@@ -98,6 +98,10 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
         { "addCapsule",            _add_capsule },
         { "addCircle",             _add_circle },
         { "addPolygon",            _add_polygon },
+        { "applyAngularImpulse",   _apply_angular_impulse },
+        { "applyForce",            _apply_force },
+        { "applyImpulse",          _apply_impulse },
+        { "applyTorque",           _apply_torque },
         { "getAngularDamping",     _get_angular_damping },
         { "getAngularVelocity",    _get_angular_velocity },
         { "getId",                 _get_id },
@@ -398,6 +402,48 @@ _add_polygon :: proc "c" (L: ^lua.State) -> i32 {
     id := b2.CreatePolygonShape(body.id, shape_def, polygon)
 
     return push_shape(L, body, id)
+}
+
+@(private="file")
+_apply_angular_impulse :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    b2.Body_ApplyAngularImpulse(body.id, f32(lua.L_checknumber(L, 2)), true)
+
+    return 0
+}
+
+@(private="file")
+_apply_force :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    force := b2.Vec2{f32(lua.L_checknumber(L, 2)), f32(lua.L_checknumber(L, 3))}
+    b2.Body_ApplyForceToCenter(body.id, force, true)
+
+    return 0
+}
+
+@(private="file")
+_apply_impulse :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    impulse := b2.Vec2{f32(lua.L_checknumber(L, 2)), f32(lua.L_checknumber(L, 3))}
+    b2.Body_ApplyLinearImpulseToCenter(body.id, impulse, true)
+
+    return 0
+}
+
+@(private="file")
+_apply_torque :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    b2.Body_ApplyTorque(body.id, f32(lua.L_checknumber(L, 2)), true)
+
+    return 0
 }
 
 @(private="file")
