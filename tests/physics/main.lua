@@ -12,14 +12,40 @@ print('gravity', gx, gy)
 print('substeps', KaptanPhysics.getSubsteps())
 print('units per meter', KaptanPhysics.getUnitsPerMeter())
 
+local CATEGORY_PLAYER = 1 << 0
+local CATEGORY_ENEMY = 1 << 1
+local CATEGORY_WALL = 1 << 2
+
 local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
 print('body valid after create', body:isValid())
 print('body type after create', body:getType())
 
 local circle = body:addCircle(12)
 local box = body:addBox(24, 32)
+local sensor = body:addCircle(8, { sensor = true, sensorEvents = true })
 print('circle valid after create', circle:isValid())
 print('box valid after create', box:isValid())
+print('sensor valid after create', sensor:isValid())
+print('sensor is sensor', sensor:isSensor())
+print('sensor events enabled', sensor:isSensorEvents())
+
+box:setDensity(2)
+box:setFriction(0.25)
+box:setRestitution(0.5)
+box:setCategory(CATEGORY_ENEMY)
+box:setMask(CATEGORY_PLAYER | CATEGORY_WALL)
+box:setGroup(-1)
+box:setContactEvents(true)
+box:setHitEvents(true)
+
+print('box density', box:getDensity())
+print('box friction', box:getFriction())
+print('box restitution', box:getRestitution())
+print('box category', box:getCategory())
+print('box mask', box:getMask())
+print('box group', box:getGroup())
+print('box contact events', box:isContactEvents())
+print('box hit events', box:isHitEvents())
 
 circle:destroy()
 print('circle valid after destroy', circle:isValid())
@@ -57,6 +83,7 @@ print('body type after set', body:getType())
 body:destroy()
 print('body valid after destroy', body:isValid())
 print('box valid after body destroy', box:isValid())
+print('sensor valid after body destroy', sensor:isValid())
 
 local cleared_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
 local cleared_shape = cleared_body:addBox(10, 10)

@@ -244,7 +244,7 @@ _add_box :: proc "c" (L: ^lua.State) -> i32 {
         return i32(lua.L_argerror(L, 3, "box height must be > 0"))
     }
 
-    shape_def := b2.DefaultShapeDef()
+    shape_def := PhysicsShapeDefaultDef(L, 4)
     polygon := b2.MakeBox(width * 0.5, height * 0.5)
     id := b2.CreatePolygonShape(body.id, shape_def, polygon)
 
@@ -268,7 +268,7 @@ _add_circle :: proc "c" (L: ^lua.State) -> i32 {
         return i32(lua.L_argerror(L, 2, "circle radius must be > 0"))
     }
 
-    shape_def := b2.DefaultShapeDef()
+    shape_def := PhysicsShapeDefaultDef(L, 3)
     circle := b2.Circle{center = b2.Vec2{0, 0}, radius = radius}
     id := b2.CreateCircleShape(body.id, shape_def, circle)
 

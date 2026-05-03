@@ -607,6 +607,30 @@ local enemy_shape = enemy_body:addCircle(16)
 local wall_shape = wall_body:addBox(200, 32)
 ```
 
+Pass an options table when creating a shape to make it a sensor or enable event collection:
+
+```lua
+local pickup_sensor = pickup_body:addCircle(24, {
+    sensor = true,
+    sensorEvents = true,
+})
+```
+
+Sensors are creation-time behavior in Box2D. Use `shape:isSensor()` to inspect a shape, and create a new shape if you need to switch between solid and sensor behavior.
+
+Use category and mask bits to control which shapes collide or appear in queries:
+
+```lua
+local CATEGORY_PLAYER = 1 << 0
+local CATEGORY_ENEMY = 1 << 1
+local CATEGORY_WALL = 1 << 2
+
+enemy_shape:setCategory(CATEGORY_ENEMY)
+enemy_shape:setMask(CATEGORY_PLAYER | CATEGORY_WALL)
+```
+
+Kaptan does not define game-specific category constants. Define category bits in Lua for each game.
+
 `shape:destroy()` removes one shape from its body. `body:destroy()`, `KaptanPhysics.clear()`, and `KaptanPhysics.destroy()` invalidate all shapes attached to destroyed bodies.
 
 ## Input System
@@ -845,12 +869,11 @@ List of available functions:
 * KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setSubsteps(count)
 * KaptanPhysics.setUnitsPerMeter(value)
-
 #### Physics Body
 
 * body = KaptanPhysicsBody.new(kind)
-* body:addBox(width, height)
-* body:addCircle(radius)
+* body:addBox(width, height, options)
+* body:addCircle(radius, options)
 * body:destroy()
 * body:getAngularDamping()
 * body:getAngularVelocity()
@@ -880,7 +903,26 @@ List of available functions:
 #### Physics Shape
 
 * shape:destroy()
+* shape:getCategory()
+* shape:getDensity()
+* shape:getFriction()
+* shape:getGroup()
+* shape:getMask()
+* shape:getRestitution()
+* shape:isContactEvents()
+* shape:isHitEvents()
+* shape:isSensor()
+* shape:isSensorEvents()
 * shape:isValid()
+* shape:setCategory(bits)
+* shape:setContactEvents(enabled)
+* shape:setDensity(value)
+* shape:setFriction(value)
+* shape:setGroup(group)
+* shape:setHitEvents(enabled)
+* shape:setMask(bits)
+* shape:setRestitution(value)
+* shape:setSensorEvents(enabled)
 
 ### Keyboard
 
