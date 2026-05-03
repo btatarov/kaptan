@@ -6,9 +6,15 @@ import lua "vendor:lua/5.4"
 
 import "../core"
 
+PhysicsShapeHandle :: struct {
+    shape: ^PhysicsShape,
+    owns:  bool,
+}
+
 PhysicsShape :: struct {
     id:      b2.ShapeId,
     body:    ^PhysicsBody,
+    refs:    int,
     is_gone: bool,
 }
 
@@ -17,7 +23,10 @@ InitPhysicsShape :: proc(shape: ^PhysicsShape, id: b2.ShapeId, body: ^PhysicsBod
 
     shape.id = id
     shape.body = body
+    shape.refs = 0
     shape.is_gone = false
+
+    b2.Shape_SetUserData(shape.id, shape)
 }
 
 DestroyPhysicsShape :: proc(shape: ^PhysicsShape) {
@@ -27,6 +36,7 @@ DestroyPhysicsShape :: proc(shape: ^PhysicsShape) {
 
     if ! shape.is_gone && b2.Shape_IsValid(shape.id) {
         log.debugf("KaptanPhysicsShape: Destroy")
+        b2.Shape_SetUserData(shape.id, nil)
         b2.DestroyShape(shape.id, true)
     }
 
@@ -45,7 +55,7 @@ FreePhysicsShape :: proc(shape: ^PhysicsShape) {
     }
 
     DestroyPhysicsShape(shape)
-    free(shape)
+    release_shape_ref(shape)
 }
 
 PhysicsShapeInvalidate :: proc(shape: ^PhysicsShape) {
@@ -63,7 +73,16 @@ PhysicsShapeIsValid :: proc "contextless" (shape: ^PhysicsShape) -> bool {
 }
 
 PhysicsShapeFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> ^PhysicsShape {
-    return (^PhysicsShape)(core.LuaUserdataHandle(L, idx, "KaptanPhysicsShapeMT"))
+    handle := (^PhysicsShapeHandle)(lua.L_checkudata(L, idx, "KaptanPhysicsShapeMT"))
+    return handle.shape
+}
+
+PhysicsShapeFromId :: proc "contextless" (id: b2.ShapeId) -> ^PhysicsShape {
+    if ! b2.Shape_IsValid(id) {
+        return nil
+    }
+
+    return (^PhysicsShape)(b2.Shape_GetUserData(id))
 }
 
 PhysicsShapeLuaBind :: proc(L: ^lua.State) {
@@ -104,9 +123,35 @@ PhysicsShapeLuaUnbind :: proc(L: ^lua.State) {
 }
 
 PhysicsShapePushLua :: proc(L: ^lua.State, shape: ^PhysicsShape) {
-    handle := (^^PhysicsShape)(lua.newuserdata(L, size_of(^PhysicsShape)))
-    handle^ = shape
+    physics_shape_push_lua(L, shape, true)
+}
+
+PhysicsShapePushLuaRef :: proc(L: ^lua.State, shape: ^PhysicsShape) {
+    physics_shape_push_lua(L, shape, false)
+}
+
+@(private="file")
+physics_shape_push_lua :: proc(L: ^lua.State, shape: ^PhysicsShape, owns: bool) {
+    if shape != nil {
+        shape.refs += 1
+    }
+
+    handle := (^PhysicsShapeHandle)(lua.newuserdata(L, size_of(PhysicsShapeHandle)))
+    handle.shape = shape
+    handle.owns = owns
     core.LuaBindClassMetatable(L, "KaptanPhysicsShape")
+}
+
+@(private="file")
+release_shape_ref :: proc(shape: ^PhysicsShape) {
+    if shape == nil {
+        return
+    }
+
+    shape.refs -= 1
+    if shape.refs <= 0 && shape.is_gone {
+        free(shape)
+    }
 }
 
 PhysicsShapeDefaultDef :: proc "contextless" (L: ^lua.State, options_idx: i32) -> b2.ShapeDef {
@@ -367,8 +412,16 @@ _set_sensor_events :: proc "c" (L: ^lua.State) -> i32 {
 __gc :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
-    shape := PhysicsShapeFromLua(L, 1)
-    FreePhysicsShape(shape)
+    handle := (^PhysicsShapeHandle)(lua.touserdata(L, 1))
+    if handle.shape != nil {
+        if handle.owns {
+            DestroyPhysicsShape(handle.shape)
+        }
+
+        release_shape_ref(handle.shape)
+        handle.shape = nil
+        handle.owns = false
+    }
 
     return 0
 }

@@ -44,6 +44,26 @@ box:setGroup(-1)
 box:setContactEvents(true)
 box:setHitEvents(true)
 
+local event_body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
+event_body:setPos(10, 20)
+local event_shape = event_body:addBox(10, 10, { contactEvents = true })
+local sensor_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
+sensor_body:setPos(10, 20)
+local event_sensor = sensor_body:addCircle(20, { sensor = true, sensorEvents = true })
+KaptanPhysics.step(1 / 60)
+local contact_events = KaptanPhysics.getContactEvents()
+local sensor_events = KaptanPhysics.getSensorEvents()
+print('contact events after overlap', #contact_events)
+print('sensor events after overlap', #sensor_events)
+if contact_events[1] then
+    print('first contact event kind', contact_events[1].kind)
+    print('first contact shape valid', contact_events[1].shapeA:isValid(), contact_events[1].shapeB:isValid())
+end
+if sensor_events[1] then
+    print('first sensor event kind', sensor_events[1].kind)
+    print('first sensor shape valid', sensor_events[1].sensor:isValid(), sensor_events[1].visitor:isValid())
+end
+
 print('box density', box:getDensity())
 print('box friction', box:getFriction())
 print('box restitution', box:getRestitution())
@@ -90,6 +110,10 @@ body:destroy()
 print('body valid after destroy', body:isValid())
 print('box valid after body destroy', box:isValid())
 print('sensor valid after body destroy', sensor:isValid())
+event_body:destroy()
+sensor_body:destroy()
+print('event shape valid after body destroy', event_shape:isValid())
+print('event sensor valid after body destroy', event_sensor:isValid())
 
 local cleared_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
 local cleared_shape = cleared_body:addBox(10, 10)

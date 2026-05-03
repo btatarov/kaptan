@@ -571,6 +571,8 @@ Physics uses the same world coordinate model as rendering. Positive `x` moves ri
 
 Physics is updated automatically by Kaptan while the window loop is running. In the current implementation, physics steps once per rendered frame using the window frame time. A later fixed-step update will make physics tick at 60 Hz independently of rendering.
 
+Use `KaptanPhysics.step(dt)` only for scripts that do not open a window, such as smoke tests or offline simulations. Do not call it inside `KaptanWindow.setLoopCallback`, because the window loop already steps physics automatically.
+
 ```lua
 KaptanPhysics.setGravity(0, 0)
 KaptanPhysics.setSubsteps(2)
@@ -622,6 +624,24 @@ local pickup_sensor = pickup_body:addCircle(24, {
 ```
 
 Sensors are creation-time behavior in Box2D. Use `shape:isSensor()` to inspect a shape, and create a new shape if you need to switch between solid and sensor behavior.
+
+Poll contact and sensor events after a physics step. Contact events require `contactEvents = true` on at least one participating shape. Sensor events require a sensor shape with `sensorEvents = true`.
+
+```lua
+for _, event in ipairs(KaptanPhysics.getContactEvents()) do
+    if event.kind == "begin" then
+        print("contact", event.shapeA, event.shapeB)
+    end
+end
+
+for _, event in ipairs(KaptanPhysics.getSensorEvents()) do
+    if event.kind == "begin" then
+        print("sensor", event.sensor, event.visitor)
+    end
+end
+```
+
+Event shape fields can be `nil` for end events if Box2D reports a shape that was already destroyed. Check fields before using them.
 
 Use category and mask bits to control which shapes collide or appear in queries:
 
@@ -869,11 +889,15 @@ List of available functions:
 * KaptanPhysics.clear()
 * KaptanPhysics.isReady()
 * KaptanPhysics.getGravity()
+* KaptanPhysics.getContactEvents()
+* KaptanPhysics.getSensorEvents()
 * KaptanPhysics.getSubsteps()
 * KaptanPhysics.getUnitsPerMeter()
 * KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setSubsteps(count)
 * KaptanPhysics.setUnitsPerMeter(value)
+* KaptanPhysics.step(dt)  -- non-window/manual scripts only
+
 #### Physics Body
 
 * body = KaptanPhysicsBody.new(kind)
