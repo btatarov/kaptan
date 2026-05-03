@@ -70,7 +70,9 @@ main :: proc() {
 
     physics.PhysicsLuaBind(L)
     physics.PhysicsBodyLuaBind(L)
+    physics.PhysicsShapeLuaBind(L)
     defer {
+        physics.PhysicsShapeLuaUnbind(L)
         physics.PhysicsBodyLuaUnbind(L)
         physics.PhysicsLuaUnbind(L)
     }

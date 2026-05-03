@@ -11,6 +11,7 @@ import "../core"
 
 PhysicsBody :: struct {
     id:      b2.BodyId,
+    shapes:  [dynamic]^PhysicsShape,
     is_gone: bool,
 }
 
@@ -24,6 +25,7 @@ InitPhysicsBody :: proc(body: ^PhysicsBody, id: b2.BodyId) {
     log.debugf("KaptanBody: Init")
 
     body.id = id
+    body.shapes = make([dynamic]^PhysicsShape)
     body.is_gone = false
 }
 
@@ -34,11 +36,13 @@ DestroyPhysicsBody :: proc(body: ^PhysicsBody) {
 
     if ! body.is_gone && b2.Body_IsValid(body.id) {
         log.debugf("KaptanBody: Destroy")
+        invalidate_body_shapes(body)
         b2.DestroyBody(body.id)
     }
 
     body.is_gone = true
     body.id = {}
+    clear(&body.shapes)
     PhysicsSystemUnregisterBody(body)
 }
 
@@ -48,6 +52,7 @@ FreePhysicsBody :: proc(body: ^PhysicsBody) {
     }
 
     DestroyPhysicsBody(body)
+    delete(body.shapes)
     free(body)
 }
 
@@ -58,6 +63,8 @@ PhysicsBodyInvalidate :: proc(body: ^PhysicsBody) {
 
     body.is_gone = true
     body.id = {}
+    invalidate_body_shapes(body)
+    clear(&body.shapes)
 }
 
 PhysicsBodyIsValid :: proc "contextless" (body: ^PhysicsBody) -> bool {
@@ -76,6 +83,8 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
 
     @static instance_reg_table: []lua.L_Reg = {
         { "destroy",               _destroy },
+        { "addBox",                _add_box },
+        { "addCircle",             _add_circle },
         { "getAngularDamping",     _get_angular_damping },
         { "getAngularVelocity",    _get_angular_velocity },
         { "getLinearDamping",      _get_linear_damping },
@@ -157,6 +166,26 @@ check_body_valid :: proc "contextless" (L: ^lua.State, body: ^PhysicsBody) {
     }
 }
 
+PhysicsBodyRegisterShape :: proc(body: ^PhysicsBody, shape: ^PhysicsShape) {
+    append(&body.shapes, shape)
+}
+
+PhysicsBodyUnregisterShape :: proc(body: ^PhysicsBody, shape: ^PhysicsShape) {
+    for existing, index in body.shapes {
+        if existing == shape {
+            ordered_remove(&body.shapes, index)
+            return
+        }
+    }
+}
+
+@(private="file")
+invalidate_body_shapes :: proc(body: ^PhysicsBody) {
+    for shape in body.shapes {
+        PhysicsShapeInvalidate(shape)
+    }
+}
+
 @(private="file")
 body_get_rotation_degrees :: proc "contextless" (body: ^PhysicsBody) -> f32 {
     return math.to_degrees(b2.Rot_GetAngle(b2.Body_GetRotation(body.id)))
@@ -197,6 +226,58 @@ _destroy :: proc "c" (L: ^lua.State) -> i32 {
     DestroyPhysicsBody(body)
 
     return 0
+}
+
+@(private="file")
+_add_box :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    width := f32(lua.L_checknumber(L, 2))
+    height := f32(lua.L_checknumber(L, 3))
+    if width <= 0 {
+        return i32(lua.L_argerror(L, 2, "box width must be > 0"))
+    }
+    if height <= 0 {
+        return i32(lua.L_argerror(L, 3, "box height must be > 0"))
+    }
+
+    shape_def := b2.DefaultShapeDef()
+    polygon := b2.MakeBox(width * 0.5, height * 0.5)
+    id := b2.CreatePolygonShape(body.id, shape_def, polygon)
+
+    shape := new(PhysicsShape)
+    InitPhysicsShape(shape, id, body)
+    PhysicsBodyRegisterShape(body, shape)
+    PhysicsShapePushLua(L, shape)
+
+    return 1
+}
+
+@(private="file")
+_add_circle :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    radius := f32(lua.L_checknumber(L, 2))
+    if radius <= 0 {
+        return i32(lua.L_argerror(L, 2, "circle radius must be > 0"))
+    }
+
+    shape_def := b2.DefaultShapeDef()
+    circle := b2.Circle{center = b2.Vec2{0, 0}, radius = radius}
+    id := b2.CreateCircleShape(body.id, shape_def, circle)
+
+    shape := new(PhysicsShape)
+    InitPhysicsShape(shape, id, body)
+    PhysicsBodyRegisterShape(body, shape)
+    PhysicsShapePushLua(L, shape)
+
+    return 1
 }
 
 @(private="file")

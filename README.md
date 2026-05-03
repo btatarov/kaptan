@@ -600,6 +600,15 @@ local x, y = enemy_body:getPos()
 enemy_sprite:setPos(x, y)
 ```
 
+Add shapes to bodies to make them collide. The initial shape API supports circles and boxes.
+
+```lua
+local enemy_shape = enemy_body:addCircle(16)
+local wall_shape = wall_body:addBox(200, 32)
+```
+
+`shape:destroy()` removes one shape from its body. `body:destroy()`, `KaptanPhysics.clear()`, and `KaptanPhysics.destroy()` invalidate all shapes attached to destroyed bodies.
+
 ## Input System
 
 Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
@@ -840,6 +849,8 @@ List of available functions:
 #### Physics Body
 
 * body = KaptanBody.new(kind)
+* body:addBox(width, height)
+* body:addCircle(radius)
 * body:destroy()
 * body:getAngularDamping()
 * body:getAngularVelocity()
@@ -865,6 +876,11 @@ List of available functions:
 * KaptanBody.STATIC
 * KaptanBody.KINEMATIC
 * KaptanBody.DYNAMIC
+
+#### Physics Shape
+
+* shape:destroy()
+* shape:isValid()
 
 ### Keyboard
 

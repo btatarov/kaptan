@@ -16,6 +16,14 @@ local body = KaptanBody.new(KaptanBody.DYNAMIC)
 print('body valid after create', body:isValid())
 print('body type after create', body:getType())
 
+local circle = body:addCircle(12)
+local box = body:addBox(24, 32)
+print('circle valid after create', circle:isValid())
+print('box valid after create', box:isValid())
+
+circle:destroy()
+print('circle valid after destroy', circle:isValid())
+
 body:setPos(10, 20)
 body:setRot(45)
 body:setVelocity(30, 40)
@@ -48,13 +56,17 @@ print('body type after set', body:getType())
 
 body:destroy()
 print('body valid after destroy', body:isValid())
+print('box valid after body destroy', box:isValid())
 
 local cleared_body = KaptanBody.new(KaptanBody.STATIC)
+local cleared_shape = cleared_body:addBox(10, 10)
 print('cleared body valid before clear', cleared_body:isValid())
+print('cleared shape valid before clear', cleared_shape:isValid())
 
 KaptanPhysics.clear()
 print('physics ready after clear', KaptanPhysics.isReady())
 print('cleared body valid after clear', cleared_body:isValid())
+print('cleared shape valid after clear', cleared_shape:isValid())
 
 KaptanPhysics.destroy()
 print('physics ready after destroy', KaptanPhysics.isReady())
