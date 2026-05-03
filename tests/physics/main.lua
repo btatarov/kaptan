@@ -1,175 +1,120 @@
-print('physics ready before init', KaptanPhysics.isReady())
+math.randomseed(os.time())
 
-local function expect_error(label, fn)
-    local ok = pcall(fn)
-    print(label, not ok)
-end
+local WINDOW_WIDTH = 1024
+local WINDOW_HEIGHT = 768
+local FLOOR_WIDTH = 1400
+local FLOOR_HEIGHT = 70
+local CRATE_SIZE = 30
+local BALL_RADIUS = 15
+local KICK_FRAME = 60 * 3
 
-KaptanPhysics.setUnitsPerMeter(64)
-KaptanPhysics.setSubsteps(2)
+KaptanWindow.open('Kaptan', WINDOW_WIDTH, WINDOW_HEIGHT)
+KaptanWindow.setVsync(true)
+KaptanRenderer.setClearColor(77, 77, 77, 255)
+
+local layer = KaptanLayer.new()
+KaptanRenderer.add(layer)
+
+KaptanPhysics.setUnitsPerMeter(100)
+KaptanPhysics.setSubsteps(8)
 KaptanPhysics.setTickRate(60)
 KaptanPhysics.init()
-
-print('physics ready after init', KaptanPhysics.isReady())
-
-KaptanPhysics.setGravity(0, 0)
-local gx, gy = KaptanPhysics.getGravity()
-print('gravity', gx, gy)
-print('substeps', KaptanPhysics.getSubsteps())
-print('tick rate', KaptanPhysics.getTickRate())
-print('units per meter', KaptanPhysics.getUnitsPerMeter())
-expect_error('invalid tick rate rejected', function()
-    KaptanPhysics.setTickRate(1001)
-end)
-print('debug draw before set', KaptanPhysics.isDebugDraw())
-KaptanPhysics.setDebugDraw(true)
-print('debug draw after set', KaptanPhysics.isDebugDraw())
+KaptanPhysics.setGravity(0, 980.665)
 KaptanPhysics.setDebugDraw(false)
-print('debug draw after clear', KaptanPhysics.isDebugDraw())
 
-local CATEGORY_PLAYER = 1 << 0
-local CATEGORY_ENEMY = 1 << 1
-local CATEGORY_WALL = 1 << 2
+local entities = {}
+local dynamic_entities = {}
+local scene = {
+    layer = layer,
+    entities = entities,
+    dynamic_entities = dynamic_entities,
+}
 
-local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
-body:setTag('player')
-print('body valid after create', body:isValid())
-print('body type after create', body:getType())
-print('body tag after set', body:getTag())
+local function add_entity(body, shape, sprite, dynamic)
+    local entity = {
+        body = body,
+        shape = shape,
+        sprite = sprite,
+    }
 
-local circle = body:addCircle(12)
-local box = body:addBox(24, 32)
-local rounded_box = body:addBox(24, 32, 4)
-local capsule = body:addCapsule(16, 40, 8)
-local polygon = body:addPolygon({ -12, -8, 12, -8, 0, 14 })
-local sensor = body:addCircle(8, { sensor = true, sensorEvents = true })
-print('circle valid after create', circle:isValid())
-print('box valid after create', box:isValid())
-print('rounded box valid after create', rounded_box:isValid())
-print('capsule valid after create', capsule:isValid())
-print('polygon valid after create', polygon:isValid())
-print('sensor valid after create', sensor:isValid())
-print('sensor is sensor', sensor:isSensor())
-print('sensor events enabled', sensor:isSensorEvents())
+    entities[#entities + 1] = entity
+    if dynamic then
+        dynamic_entities[#dynamic_entities + 1] = entity
+    end
 
-box:setDensity(2)
-box:setFriction(0.25)
-box:setRestitution(0.5)
-box:setCategory(CATEGORY_ENEMY)
-box:setMask(CATEGORY_PLAYER | CATEGORY_WALL)
-box:setGroup(-1)
-box:setContactEvents(true)
-box:setHitEvents(true)
-box:setTag('enemy')
-expect_error('invalid density rejected', function()
-    box:setDensity(-1)
-end)
-expect_error('invalid friction rejected', function()
-    box:setFriction(-1)
-end)
-expect_error('invalid restitution rejected', function()
-    box:setRestitution(-1)
-end)
-expect_error('invalid rounded box radius rejected', function()
-    body:addBox(10, 10, 6)
-end)
-expect_error('invalid capsule radius rejected', function()
-    body:addCapsule(10, 20, 6)
-end)
-
-local event_body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
-event_body:setPos(10, 20)
-local event_shape = event_body:addBox(10, 10, { contactEvents = true })
-event_shape:setTag('event-box')
-local sensor_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
-sensor_body:setPos(10, 20)
-local event_sensor = sensor_body:addCircle(20, { sensor = true, sensorEvents = true })
-event_sensor:setTag('event-sensor')
-KaptanPhysics.step(1 / 60)
-local contact_events = KaptanPhysics.getContactEvents()
-local sensor_events = KaptanPhysics.getSensorEvents()
-print('contact events after overlap', #contact_events)
-print('sensor events after overlap', #sensor_events)
-print('contact events after poll clear', #KaptanPhysics.getContactEvents())
-print('sensor events after poll clear', #KaptanPhysics.getSensorEvents())
-if contact_events[1] then
-    print('first contact event kind', contact_events[1].kind)
-    print('first contact shape valid', contact_events[1].shapeA:isValid(), contact_events[1].shapeB:isValid())
-end
-if sensor_events[1] then
-    print('first sensor event kind', sensor_events[1].kind)
-    print('first sensor shape valid', sensor_events[1].sensor:isValid(), sensor_events[1].visitor:isValid())
-end
-local queried_shapes = KaptanPhysics.queryAABB(10, 20, 64, 64, { mask = CATEGORY_ENEMY })
-local ray_hit = KaptanPhysics.raycast(-40, 0, 40, 0, { mask = CATEGORY_ENEMY })
-print('query aabb enemy hits', #queried_shapes)
-print('raycast enemy hit', ray_hit ~= nil)
-if ray_hit then
-    print('raycast shape valid', ray_hit.shape:isValid())
-    print('raycast shape tag', ray_hit.shape:getTag())
+    return entity
 end
 
-print('box density', box:getDensity())
-print('box friction', box:getFriction())
-print('box restitution', box:getRestitution())
-print('box category', box:getCategory())
-print('box mask', box:getMask())
-print('box group', box:getGroup())
-print('box contact events', box:isContactEvents())
-print('box hit events', box:isHitEvents())
-print('box tag', box:getTag())
+local floor_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
+floor_body:setPos(0, WINDOW_HEIGHT / 2 - FLOOR_HEIGHT / 2)
+local floor_shape = floor_body:addBox(FLOOR_WIDTH, FLOOR_HEIGHT)
+floor_shape:setFriction(0.8)
+floor_shape:setTag('floor')
 
-circle:destroy()
-print('circle valid after destroy', circle:isValid())
+local floor_sprite = KaptanSprite.new('tests/physics/floor.png')
+floor_sprite:setPos(floor_body:getPos())
+layer:add(floor_sprite)
+add_entity(floor_body, floor_shape, floor_sprite, false)
 
-body:setPos(10, 20)
-body:setRot(45)
-body:setVelocity(30, 40)
-body:setAngularVelocity(90)
-body:setLinearDamping(0.5)
-body:setAngularDamping(0.25)
-body:setBullet(true)
+for i = 1, 15 do
+    for j = 1, 12 do
+        local x = -WINDOW_WIDTH / 2 + 50 + 65 * (i - 1)
+        local y = -WINDOW_HEIGHT / 2 + 50 + 55 * (j - 1)
+        local pick = math.random(1, 2)
 
-local x, y = body:getPos()
-local vx, vy = body:getVelocity()
-print('body pos', x, y)
-print('body rot', body:getRot())
-print('body velocity', vx, vy)
-print('body angular velocity', body:getAngularVelocity())
-print('body linear damping', body:getLinearDamping())
-print('body angular damping', body:getAngularDamping())
+        local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
+        body:setPos(x, y)
+        body:setRot(math.random() * 360)
+        body:setLinearDamping(0.01)
+        body:setAngularDamping(0.01)
 
-body:setFixedRotation(true)
-print('body fixed rotation', body:isFixedRotation())
-print('body bullet', body:isBullet())
-print('body enabled before disable', body:isEnabled())
+        local sprite
+        local shape
+        if pick == 1 then
+            shape = body:addBox(CRATE_SIZE, CRATE_SIZE)
+            shape:setTag('crate')
+            sprite = KaptanSprite.new('tests/physics/crate.png')
+        else
+            shape = body:addCircle(BALL_RADIUS)
+            shape:setTag('ball')
+            sprite = KaptanSprite.new('tests/physics/ball.png')
+        end
 
-body:setEnabled(false)
-print('body enabled after disable', body:isEnabled())
-body:setEnabled(true)
-print('body enabled after enable', body:isEnabled())
+        shape:setFriction(0.6)
+        shape:setRestitution(0.5)
 
-body:setType(KaptanPhysicsBody.KINEMATIC)
-print('body type after set', body:getType())
+        sprite:setPos(body:getPos())
+        sprite:setRot(body:getRot())
+        layer:add(sprite)
+        add_entity(body, shape, sprite, true)
+    end
+end
 
-body:destroy()
-print('body valid after destroy', body:isValid())
-print('box valid after body destroy', box:isValid())
-print('sensor valid after body destroy', sensor:isValid())
-event_body:destroy()
-sensor_body:destroy()
-print('event shape valid after body destroy', event_shape:isValid())
-print('event sensor valid after body destroy', event_sensor:isValid())
+local frames = 0
+KaptanWindow.setLoopCallback(function()
+    if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_ESCAPE) then
+        KaptanWindow.quit()
+        return
+    end
 
-local cleared_body = KaptanPhysicsBody.new(KaptanPhysicsBody.STATIC)
-local cleared_shape = cleared_body:addBox(10, 10)
-print('cleared body valid before clear', cleared_body:isValid())
-print('cleared shape valid before clear', cleared_shape:isValid())
+    if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_F1) then
+        KaptanPhysics.setDebugDraw(not KaptanPhysics.isDebugDraw())
+    end
 
-KaptanPhysics.clear()
-print('physics ready after clear', KaptanPhysics.isReady())
-print('cleared body valid after clear', cleared_body:isValid())
-print('cleared shape valid after clear', cleared_shape:isValid())
+    for _, entity in ipairs(scene.entities) do
+        entity.sprite:setPos(entity.body:getPos())
+        entity.sprite:setRot(entity.body:getRot())
+    end
 
-KaptanPhysics.destroy()
-print('physics ready after destroy', KaptanPhysics.isReady())
+    frames = frames + 1
+    if frames == KICK_FRAME then
+        for _ = 1, 10 do
+            local entity = scene.dynamic_entities[math.random(1, #scene.dynamic_entities)]
+            entity.body:setVelocity(math.random(-10, 10) * 1000, math.random(-10, 10) * 1000)
+            entity.body:setAngularVelocity(math.random(-10, 10) * 10)
+        end
+    end
+
+    KaptanPhysics.getContactEvents()
+    KaptanPhysics.getSensorEvents()
+end)
