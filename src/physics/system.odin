@@ -11,6 +11,7 @@ import "../core"
 PhysicsSystem :: struct {
     initialized:     bool,
     world:           b2.WorldId,
+    bodies:          [dynamic]^PhysicsBody,
     substeps:        i32,
     units_per_meter: f32,
 }
@@ -50,6 +51,7 @@ PhysicsSystemDestroy :: proc() {
 
     log.debugf("KaptanPhysics: Destroy")
 
+    invalidate_physics_bodies()
     b2.DestroyWorld(physics_system.world)
     physics_system.initialized = false
     physics_system.world = {}
@@ -80,6 +82,10 @@ PhysicsSystemRequireReady :: proc "contextless" (L: ^lua.State) {
     }
 }
 
+PhysicsSystemGetWorld :: proc "contextless" () -> b2.WorldId {
+    return physics_system.world
+}
+
 PhysicsLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
         { "clear",            _clear },
@@ -97,12 +103,36 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
 
     physics_system.substeps = DEFAULT_SUBSTEPS
     physics_system.units_per_meter = DEFAULT_UNITS_PER_METER
+    physics_system.bodies = make([dynamic]^PhysicsBody)
 
     core.LuaBindSingleton(L, "KaptanPhysics", &reg_table)
 }
 
 PhysicsLuaUnbind :: proc(L: ^lua.State) {
     PhysicsSystemDestroy()
+    delete(physics_system.bodies)
+}
+
+PhysicsSystemRegisterBody :: proc(body: ^PhysicsBody) {
+    append(&physics_system.bodies, body)
+}
+
+PhysicsSystemUnregisterBody :: proc(body: ^PhysicsBody) {
+    for existing, index in physics_system.bodies {
+        if existing == body {
+            ordered_remove(&physics_system.bodies, index)
+            return
+        }
+    }
+}
+
+@(private="file")
+invalidate_physics_bodies :: proc() {
+    for body in physics_system.bodies {
+        PhysicsBodyInvalidate(body)
+    }
+
+    clear(&physics_system.bodies)
 }
 
 @(private="file")

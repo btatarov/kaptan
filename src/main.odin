@@ -69,7 +69,11 @@ main :: proc() {
     }
 
     physics.PhysicsLuaBind(L)
-    defer physics.PhysicsLuaUnbind(L)
+    physics.PhysicsBodyLuaBind(L)
+    defer {
+        physics.PhysicsBodyLuaUnbind(L)
+        physics.PhysicsLuaUnbind(L)
+    }
 
     // registered last so Lua __gc runs before subsystem resources are torn down
     defer core.DestroyLuaState(L)

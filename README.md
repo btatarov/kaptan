@@ -580,6 +580,15 @@ KaptanPhysics.setSubsteps(2)
 
 Use `KaptanPhysics.clear()` to reset the world while keeping physics initialized. Use `KaptanPhysics.destroy()` when physics is no longer needed.
 
+Create bodies with `KaptanBody.new(kind)`. Body kinds are `KaptanBody.STATIC`, `KaptanBody.KINEMATIC`, and `KaptanBody.DYNAMIC`.
+
+```lua
+local enemy_body = KaptanBody.new(KaptanBody.DYNAMIC)
+print(enemy_body:isValid())
+```
+
+`body:destroy()` explicitly removes the body from the physics world. `KaptanPhysics.clear()` and `KaptanPhysics.destroy()` invalidate all existing body handles, so `body:isValid()` returns `false` after the world is cleared or destroyed.
+
 ## Input System
 
 Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
@@ -816,6 +825,17 @@ List of available functions:
 * KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setSubsteps(count)
 * KaptanPhysics.setUnitsPerMeter(value)
+
+#### Physics Body
+
+* body = KaptanBody.new(kind)
+* body:destroy()
+* body:getType()
+* body:isValid()
+* body:setType(kind)
+* KaptanBody.STATIC
+* KaptanBody.KINEMATIC
+* KaptanBody.DYNAMIC
 
 ### Keyboard
 
