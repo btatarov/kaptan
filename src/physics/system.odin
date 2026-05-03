@@ -57,6 +57,7 @@ PhysicsSensorEvent :: struct {
 @(private="file") DEFAULT_SUBSTEPS: i32 = 2
 @(private="file") DEFAULT_UNITS_PER_METER: f32 = 64
 @(private="file") DEFAULT_TICK_RATE: f32 = 60
+@(private="file") MAX_TICK_RATE: f32 = 1000
 @(private="file") MAX_FRAME_TIME: f32 = 0.25
 
 PhysicsSystemInit :: proc() {
@@ -96,6 +97,8 @@ PhysicsSystemDestroy :: proc() {
 
     log.debugf("KaptanPhysics: Destroy")
 
+    clear_contact_events()
+    clear_sensor_events()
     invalidate_physics_bodies()
     b2.DestroyWorld(physics_system.world)
     physics_system.initialized = false
@@ -792,6 +795,9 @@ _set_tick_rate :: proc "c" (L: ^lua.State) -> i32 {
     tick_rate := f32(lua.L_checknumber(L, 1))
     if tick_rate <= 0 {
         return i32(lua.L_argerror(L, 1, "tick rate must be > 0"))
+    }
+    if tick_rate > MAX_TICK_RATE {
+        return i32(lua.L_argerror(L, 1, "tick rate must be <= 1000"))
     }
 
     physics_system.tick_rate = tick_rate

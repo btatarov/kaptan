@@ -66,6 +66,10 @@ PhysicsShapeInvalidate :: proc(shape: ^PhysicsShape) {
         return
     }
 
+    if ! shape.is_gone && b2.Shape_IsValid(shape.id) {
+        b2.Shape_SetUserData(shape.id, nil)
+    }
+
     shape.is_gone = true
     shape.id = {}
     shape.body = nil
@@ -375,7 +379,12 @@ _set_contact_events :: proc "c" (L: ^lua.State) -> i32 {
 _set_density :: proc "c" (L: ^lua.State) -> i32 {
     shape := PhysicsShapeFromLua(L, 1)
     check_shape_valid(L, shape)
-    b2.Shape_SetDensity(shape.id, f32(lua.L_checknumber(L, 2)), true)
+    density := f32(lua.L_checknumber(L, 2))
+    if density < 0 {
+        return i32(lua.L_argerror(L, 2, "density must be >= 0"))
+    }
+
+    b2.Shape_SetDensity(shape.id, density, true)
 
     return 0
 }
@@ -384,7 +393,12 @@ _set_density :: proc "c" (L: ^lua.State) -> i32 {
 _set_friction :: proc "c" (L: ^lua.State) -> i32 {
     shape := PhysicsShapeFromLua(L, 1)
     check_shape_valid(L, shape)
-    b2.Shape_SetFriction(shape.id, f32(lua.L_checknumber(L, 2)))
+    friction := f32(lua.L_checknumber(L, 2))
+    if friction < 0 {
+        return i32(lua.L_argerror(L, 2, "friction must be >= 0"))
+    }
+
+    b2.Shape_SetFriction(shape.id, friction)
 
     return 0
 }
@@ -424,7 +438,12 @@ _set_mask :: proc "c" (L: ^lua.State) -> i32 {
 _set_restitution :: proc "c" (L: ^lua.State) -> i32 {
     shape := PhysicsShapeFromLua(L, 1)
     check_shape_valid(L, shape)
-    b2.Shape_SetRestitution(shape.id, f32(lua.L_checknumber(L, 2)))
+    restitution := f32(lua.L_checknumber(L, 2))
+    if restitution < 0 {
+        return i32(lua.L_argerror(L, 2, "restitution must be >= 0"))
+    }
+
+    b2.Shape_SetRestitution(shape.id, restitution)
 
     return 0
 }

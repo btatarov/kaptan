@@ -271,6 +271,9 @@ _add_box :: proc "c" (L: ^lua.State) -> i32 {
         if radius < 0 {
             return i32(lua.L_argerror(L, 4, "box radius must be >= 0"))
         }
+        if radius > min(width, height) * 0.5 {
+            return i32(lua.L_argerror(L, 4, "box radius must be <= half the smaller side"))
+        }
         options_idx = 5
     }
 
@@ -323,6 +326,9 @@ _add_capsule :: proc "c" (L: ^lua.State) -> i32 {
     }
     if radius <= 0 {
         return i32(lua.L_argerror(L, 4, "capsule radius must be > 0"))
+    }
+    if radius > min(width, height) * 0.5 {
+        return i32(lua.L_argerror(L, 4, "capsule radius must be <= half the smaller side"))
     }
 
     shape_def := PhysicsShapeDefaultDef(L, 5)
