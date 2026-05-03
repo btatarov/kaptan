@@ -84,7 +84,9 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
     @static instance_reg_table: []lua.L_Reg = {
         { "destroy",               _destroy },
         { "addBox",                _add_box },
+        { "addCapsule",            _add_capsule },
         { "addCircle",             _add_circle },
+        { "addPolygon",            _add_polygon },
         { "getAngularDamping",     _get_angular_damping },
         { "getAngularVelocity",    _get_angular_velocity },
         { "getLinearDamping",      _get_linear_damping },
@@ -187,6 +189,16 @@ invalidate_body_shapes :: proc(body: ^PhysicsBody) {
 }
 
 @(private="file")
+push_shape :: proc(L: ^lua.State, body: ^PhysicsBody, id: b2.ShapeId) -> i32 {
+    shape := new(PhysicsShape)
+    InitPhysicsShape(shape, id, body)
+    PhysicsBodyRegisterShape(body, shape)
+    PhysicsShapePushLua(L, shape)
+
+    return 1
+}
+
+@(private="file")
 body_get_rotation_degrees :: proc "contextless" (body: ^PhysicsBody) -> f32 {
     return math.to_degrees(b2.Rot_GetAngle(b2.Body_GetRotation(body.id)))
 }
@@ -244,16 +256,26 @@ _add_box :: proc "c" (L: ^lua.State) -> i32 {
         return i32(lua.L_argerror(L, 3, "box height must be > 0"))
     }
 
-    shape_def := PhysicsShapeDefaultDef(L, 4)
-    polygon := b2.MakeBox(width * 0.5, height * 0.5)
+    radius: f32
+    options_idx := i32(4)
+    if bool(lua.isnumber(L, 4)) {
+        radius = f32(lua.L_checknumber(L, 4))
+        if radius < 0 {
+            return i32(lua.L_argerror(L, 4, "box radius must be >= 0"))
+        }
+        options_idx = 5
+    }
+
+    shape_def := PhysicsShapeDefaultDef(L, options_idx)
+    polygon: b2.Polygon
+    if radius > 0 {
+        polygon = b2.MakeRoundedBox(width * 0.5, height * 0.5, radius)
+    } else {
+        polygon = b2.MakeBox(width * 0.5, height * 0.5)
+    }
     id := b2.CreatePolygonShape(body.id, shape_def, polygon)
 
-    shape := new(PhysicsShape)
-    InitPhysicsShape(shape, id, body)
-    PhysicsBodyRegisterShape(body, shape)
-    PhysicsShapePushLua(L, shape)
-
-    return 1
+    return push_shape(L, body, id)
 }
 
 @(private="file")
@@ -272,12 +294,90 @@ _add_circle :: proc "c" (L: ^lua.State) -> i32 {
     circle := b2.Circle{center = b2.Vec2{0, 0}, radius = radius}
     id := b2.CreateCircleShape(body.id, shape_def, circle)
 
-    shape := new(PhysicsShape)
-    InitPhysicsShape(shape, id, body)
-    PhysicsBodyRegisterShape(body, shape)
-    PhysicsShapePushLua(L, shape)
+    return push_shape(L, body, id)
+}
 
-    return 1
+@(private="file")
+_add_capsule :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    width := f32(lua.L_checknumber(L, 2))
+    height := f32(lua.L_checknumber(L, 3))
+    radius := f32(lua.L_checknumber(L, 4))
+    if width <= 0 {
+        return i32(lua.L_argerror(L, 2, "capsule width must be > 0"))
+    }
+    if height <= 0 {
+        return i32(lua.L_argerror(L, 3, "capsule height must be > 0"))
+    }
+    if radius <= 0 {
+        return i32(lua.L_argerror(L, 4, "capsule radius must be > 0"))
+    }
+
+    shape_def := PhysicsShapeDefaultDef(L, 5)
+    half_width := width * 0.5
+    half_height := height * 0.5
+    capsule := b2.Capsule{}
+    if height >= width {
+        capsule.center1 = b2.Vec2{0, -half_height + radius}
+        capsule.center2 = b2.Vec2{0, half_height - radius}
+    } else {
+        capsule.center1 = b2.Vec2{-half_width + radius, 0}
+        capsule.center2 = b2.Vec2{half_width - radius, 0}
+    }
+    capsule.radius = radius
+    id := b2.CreateCapsuleShape(body.id, shape_def, capsule)
+
+    return push_shape(L, body, id)
+}
+
+@(private="file")
+_add_polygon :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    body := PhysicsBodyFromLua(L, 1)
+    check_body_valid(L, body)
+
+    if ! lua.istable(L, 2) {
+        lua.L_typeerror(L, 2, "table")
+    }
+
+    point_count := i32(lua.rawlen(L, 2))
+    if point_count < 6 || point_count % 2 != 0 {
+        return i32(lua.L_argerror(L, 2, "polygon points must contain at least 3 x/y pairs"))
+    }
+
+    vertex_count := point_count / 2
+    if vertex_count > b2.MAX_POLYGON_VERTICES {
+        return i32(lua.L_argerror(L, 2, "polygon supports at most 8 points"))
+    }
+
+    points := make([]b2.Vec2, vertex_count, allocator = context.temp_allocator)
+    for i := i32(0); i < vertex_count; i += 1 {
+        lua.rawgeti(L, 2, lua.Integer(i * 2 + 1))
+        x := f32(lua.L_checknumber(L, -1))
+        lua.pop(L, 1)
+
+        lua.rawgeti(L, 2, lua.Integer(i * 2 + 2))
+        y := f32(lua.L_checknumber(L, -1))
+        lua.pop(L, 1)
+
+        points[i] = b2.Vec2{x, y}
+    }
+
+    hull := b2.ComputeHull(points)
+    if ! b2.ValidateHull(hull) {
+        return i32(lua.L_argerror(L, 2, "polygon points must form a valid convex hull"))
+    }
+
+    shape_def := PhysicsShapeDefaultDef(L, 3)
+    polygon := b2.MakePolygon(hull, 0)
+    id := b2.CreatePolygonShape(body.id, shape_def, polygon)
+
+    return push_shape(L, body, id)
 }
 
 @(private="file")

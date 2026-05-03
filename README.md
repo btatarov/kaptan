@@ -600,12 +600,17 @@ local x, y = enemy_body:getPos()
 enemy_sprite:setPos(x, y)
 ```
 
-Add shapes to bodies to make them collide. The initial shape API supports circles and boxes.
+Add shapes to bodies to make them collide. The initial shape API supports circles, boxes, rounded boxes, capsules, and convex polygons.
 
 ```lua
 local enemy_shape = enemy_body:addCircle(16)
 local wall_shape = wall_body:addBox(200, 32)
+local rounded_wall_shape = wall_body:addBox(200, 32, 6)
+local capsule_shape = enemy_body:addCapsule(24, 48, 12)
+local triangle_shape = enemy_body:addPolygon({ -12, -8, 12, -8, 0, 14 })
 ```
+
+Polygons must be convex and use at most 8 points. `addPolygon` accepts a flat `{ x1, y1, x2, y2, ... }` table in body-local coordinates.
 
 Pass an options table when creating a shape to make it a sensor or enable event collection:
 
@@ -873,7 +878,10 @@ List of available functions:
 
 * body = KaptanPhysicsBody.new(kind)
 * body:addBox(width, height, options)
+* body:addBox(width, height, radius, options)
+* body:addCapsule(width, height, radius, options)
 * body:addCircle(radius, options)
+* body:addPolygon(points, options)
 * body:destroy()
 * body:getAngularDamping()
 * body:getAngularVelocity()
