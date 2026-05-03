@@ -11,11 +11,14 @@ import lua "vendor:lua/5.4"
 import "../core"
 
 PhysicsBody :: struct {
+    unique_id: u64,
     id:      b2.BodyId,
     shapes:  [dynamic]^PhysicsShape,
     tag:     cstring,
     is_gone: bool,
 }
+
+@(private="file") next_body_unique_id: u64 = 1
 
 PhysicsBodyKind :: enum u32 {
     Static,
@@ -26,6 +29,8 @@ PhysicsBodyKind :: enum u32 {
 InitPhysicsBody :: proc(body: ^PhysicsBody, id: b2.BodyId) {
     log.debugf("KaptanPhysicsBody: Init")
 
+    body.unique_id = next_body_unique_id
+    next_body_unique_id += 1
     body.id = id
     body.shapes = make([dynamic]^PhysicsShape)
     body.tag = nil
@@ -95,6 +100,7 @@ PhysicsBodyLuaBind :: proc(L: ^lua.State) {
         { "addPolygon",            _add_polygon },
         { "getAngularDamping",     _get_angular_damping },
         { "getAngularVelocity",    _get_angular_velocity },
+        { "getId",                 _get_id },
         { "getLinearDamping",      _get_linear_damping },
         { "getPos",                _get_pos },
         { "getRot",                _get_rot },
@@ -410,6 +416,14 @@ _get_angular_velocity :: proc "c" (L: ^lua.State) -> i32 {
     check_body_valid(L, body)
 
     lua.pushnumber(L, lua.Number(math.to_degrees(b2.Body_GetAngularVelocity(body.id))))
+
+    return 1
+}
+
+@(private="file")
+_get_id :: proc "c" (L: ^lua.State) -> i32 {
+    body := PhysicsBodyFromLua(L, 1)
+    lua.pushinteger(L, lua.Integer(body.unique_id))
 
     return 1
 }

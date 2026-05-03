@@ -13,6 +13,7 @@ PhysicsShapeHandle :: struct {
 }
 
 PhysicsShape :: struct {
+    unique_id: u64,
     id:      b2.ShapeId,
     body:    ^PhysicsBody,
     tag:     cstring,
@@ -20,9 +21,13 @@ PhysicsShape :: struct {
     is_gone: bool,
 }
 
+@(private="file") next_shape_unique_id: u64 = 1
+
 InitPhysicsShape :: proc(shape: ^PhysicsShape, id: b2.ShapeId, body: ^PhysicsBody) {
     log.debugf("KaptanPhysicsShape: Init")
 
+    shape.unique_id = next_shape_unique_id
+    next_shape_unique_id += 1
     shape.id = id
     shape.body = body
     shape.tag = nil
@@ -113,6 +118,7 @@ PhysicsShapeLuaBind :: proc(L: ^lua.State) {
         { "getDensity",           _get_density },
         { "getFriction",          _get_friction },
         { "getGroup",             _get_group },
+        { "getId",                _get_id },
         { "getMask",              _get_mask },
         { "getRestitution",       _get_restitution },
         { "getTag",               _get_tag },
@@ -269,6 +275,14 @@ _get_group :: proc "c" (L: ^lua.State) -> i32 {
 
     filter := b2.Shape_GetFilter(shape.id)
     lua.pushinteger(L, lua.Integer(filter.groupIndex))
+
+    return 1
+}
+
+@(private="file")
+_get_id :: proc "c" (L: ^lua.State) -> i32 {
+    shape := PhysicsShapeFromLua(L, 1)
+    lua.pushinteger(L, lua.Integer(shape.unique_id))
 
     return 1
 }
