@@ -308,6 +308,16 @@ curve:addKey(1.0, 100)
 local value = curve:sample(0.5)
 ```
 
+Vector curves sample an `x, y` pair with the same keyframe and easing rules:
+
+```lua
+local pos_curve = KaptanVec2Curve.new()
+pos_curve:addKey(0.0, 0, 0, KaptanEase.OUT_QUAD)
+pos_curve:addKey(1.0, 100, 50)
+
+local x, y = pos_curve:sample(0.5)
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -942,6 +952,13 @@ List of available functions:
 * KaptanEase.IN_OUT_BACK
 * curve = KaptanAnimationCurve.new()
 * curve:addKey(time, value, ease)
+* curve:clear()
+* curve:getDuration()
+* curve:getKeyCount()
+* curve:removeKey(index)
+* curve:sample(time)
+* curve = KaptanVec2Curve.new()
+* curve:addKey(time, x, y, ease)
 * curve:clear()
 * curve:getDuration()
 * curve:getKeyCount()
