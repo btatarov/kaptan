@@ -298,6 +298,16 @@ local t = 0.5
 local eased = KaptanEase.sample(KaptanEase.OUT_QUAD, t)
 ```
 
+Scalar curves sample a number from time-based keyframes. Easing belongs to the segment starting at the key where it is set.
+
+```lua
+local curve = KaptanAnimationCurve.new()
+curve:addKey(0.0, 0, KaptanEase.OUT_QUAD)
+curve:addKey(1.0, 100)
+
+local value = curve:sample(0.5)
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -930,6 +940,13 @@ List of available functions:
 * KaptanEase.IN_BACK
 * KaptanEase.OUT_BACK
 * KaptanEase.IN_OUT_BACK
+* curve = KaptanAnimationCurve.new()
+* curve:addKey(time, value, ease)
+* curve:clear()
+* curve:getDuration()
+* curve:getKeyCount()
+* curve:removeKey(index)
+* curve:sample(time)
 
 ### Audio
 
