@@ -1,5 +1,6 @@
 package graphics
 
+import "core:c"
 import "core:log"
 
 import lua "vendor:lua/5.4"
@@ -20,6 +21,13 @@ Sprite :: struct {
     is_gone:         bool,
 
     draw:            proc(sprite: ^Sprite),
+}
+
+SpriteFrame :: struct {
+    source: rl.Rectangle,
+    offset: rl.Vector2,
+    width:  i32,
+    height: i32,
 }
 
 @(private="file") sprite_count: u32
@@ -88,6 +96,7 @@ SpriteLuaBind :: proc(L: ^lua.State) {
         { "getSize",       _get_size },
         { "isVisible",     _get_visible },
         { "setColor",      _set_color },
+        { "setFrame",      _set_frame },
         { "setFrameSize",  _set_frame_size },
         { "setOffset",     _set_offset },
         { "setPiv",        _set_piv },
@@ -105,7 +114,6 @@ SpriteLuaUnbind :: proc(L: ^lua.State) {
     // nothing to do
 }
 
-@(private="file")
 sprite_draw :: proc(sprite: ^Sprite) {
     if ! sprite.is_gone && sprite.visible {
         visible_left := -f32(sprite.width) * 0.5 + sprite.offset.x
@@ -131,6 +139,93 @@ sprite_draw :: proc(sprite: ^Sprite) {
             sprite.rotation,
             sprite.color,
         )
+    }
+}
+
+@(private="file")
+read_frame_table_field :: proc "contextless" (L: ^lua.State, frame_idx: i32, table_idx: i32, name, message: cstring) -> i32 {
+    abs_idx := core.LuaGetAbsIndex(L, table_idx)
+    lua.getfield(L, abs_idx, name)
+    if ! lua.istable(L, -1) {
+        lua.pop(L, 1)
+        lua.L_argerror(L, c.int(frame_idx), message)
+    }
+
+    return lua.gettop(L)
+}
+
+@(private="file")
+read_frame_number_field :: proc "contextless" (L: ^lua.State, frame_idx: i32, table_idx: i32, name, message: cstring) -> f32 {
+    abs_idx := core.LuaGetAbsIndex(L, table_idx)
+    lua.getfield(L, abs_idx, name)
+    if ! lua.isnumber(L, -1) {
+        lua.pop(L, 1)
+        lua.L_argerror(L, c.int(frame_idx), message)
+    }
+
+    value := f32(lua.L_checknumber(L, -1))
+    lua.pop(L, 1)
+
+    return value
+}
+
+@(private="file")
+read_frame_integer_field :: proc "contextless" (L: ^lua.State, frame_idx: i32, table_idx: i32, name, message: cstring) -> i32 {
+    abs_idx := core.LuaGetAbsIndex(L, table_idx)
+    lua.getfield(L, abs_idx, name)
+    if ! lua.isnumber(L, -1) {
+        lua.pop(L, 1)
+        lua.L_argerror(L, c.int(frame_idx), message)
+    }
+
+    value := i32(lua.L_checkinteger(L, -1))
+    lua.pop(L, 1)
+
+    return value
+}
+
+@(private="file")
+sprite_frame_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> SpriteFrame {
+    if ! lua.istable(L, idx) {
+        lua.L_typeerror(L, c.int(idx), "table")
+    }
+
+    frame_idx := core.LuaGetAbsIndex(L, idx)
+    source_idx := read_frame_table_field(L, frame_idx, frame_idx, "source", "frame.source must be a table")
+    source_x := read_frame_number_field(L, frame_idx, source_idx, "x", "frame.source.x must be a number")
+    source_y := read_frame_number_field(L, frame_idx, source_idx, "y", "frame.source.y must be a number")
+    source_w := read_frame_number_field(L, frame_idx, source_idx, "w", "frame.source.w must be a number")
+    source_h := read_frame_number_field(L, frame_idx, source_idx, "h", "frame.source.h must be a number")
+    lua.pop(L, 1)
+
+    frame_size_idx := read_frame_table_field(L, frame_idx, frame_idx, "frame", "frame.frame must be a table")
+    width := read_frame_integer_field(L, frame_idx, frame_size_idx, "w", "frame.frame.w must be a number")
+    height := read_frame_integer_field(L, frame_idx, frame_size_idx, "h", "frame.frame.h must be a number")
+    lua.pop(L, 1)
+
+    offset_idx := read_frame_table_field(L, frame_idx, frame_idx, "offset", "frame.offset must be a table")
+    offset_x := read_frame_number_field(L, frame_idx, offset_idx, "x", "frame.offset.x must be a number")
+    offset_y := read_frame_number_field(L, frame_idx, offset_idx, "y", "frame.offset.y must be a number")
+    lua.pop(L, 1)
+
+    if source_w <= 0 {
+        lua.L_argerror(L, c.int(frame_idx), "frame.source.w must be > 0")
+    }
+    if source_h <= 0 {
+        lua.L_argerror(L, c.int(frame_idx), "frame.source.h must be > 0")
+    }
+    if width <= 0 {
+        lua.L_argerror(L, c.int(frame_idx), "frame.frame.w must be > 0")
+    }
+    if height <= 0 {
+        lua.L_argerror(L, c.int(frame_idx), "frame.frame.h must be > 0")
+    }
+
+    return SpriteFrame{
+        source = rl.Rectangle{source_x, source_y, source_w, source_h},
+        offset = rl.Vector2{offset_x, offset_y},
+        width = width,
+        height = height,
     }
 }
 
@@ -219,6 +314,19 @@ _set_color :: proc "c" (L: ^lua.State) -> i32 {
     a := u8(clamp(int(lua.L_checkinteger(L, 5)), 0, 255))
 
     sprite.color = rl.Color{r, g, b, a}
+
+    return 0
+}
+
+@(private="file")
+_set_frame :: proc "c" (L: ^lua.State) -> i32 {
+    sprite := SpriteFromLua(L, 1)
+    frame := sprite_frame_from_lua(L, 2)
+
+    sprite.source = frame.source
+    sprite.offset = frame.offset
+    sprite.width = frame.width
+    sprite.height = frame.height
 
     return 0
 }

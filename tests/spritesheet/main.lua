@@ -10,9 +10,7 @@ local function createSprite(path, name)
     local data = sprite_cache[path].sprites[name]
 
     local sprite = KaptanSprite.new(dir ..  sprite_cache[path].texture)
-    sprite:setSourceRect(data.source.x, data.source.y, data.source.w, data.source.h)
-    sprite:setFrameSize(data.frame.w, data.frame.h)
-    sprite:setOffset(data.offset.x, data.offset.y)
+    sprite:setFrame(data)
 
     return sprite
 end

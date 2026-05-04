@@ -240,9 +240,7 @@ local sheet = dofile('tests/spritesheet/sheet.lua')
 local data = sheet.sprites.kaptan1
 
 local sprite = KaptanSprite.new('tests/spritesheet/' .. sheet.texture)
-sprite:setSourceRect(data.source.x, data.source.y, data.source.w, data.source.h)
-sprite:setFrameSize(data.frame.w, data.frame.h)
-sprite:setOffset(data.offset.x, data.offset.y)
+sprite:setFrame(data)
 ```
 
 `sprite:getSize()` returns the logical frame size, not the trimmed source size. This keeps placement and pivot formulas consistent:
@@ -844,6 +842,7 @@ List of available functions:
 * sprite:getSize()
 * sprite:isVisible()
 * sprite:setColor(r, g, b, a)
+* sprite:setFrame(frame_table)
 * sprite:setFrameSize(w, h)
 * sprite:setOffset(x, y)
 * sprite:setPiv(x, y)
