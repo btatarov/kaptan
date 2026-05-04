@@ -279,6 +279,18 @@ KaptanCamera.setZoom(2)
 
 The player is rendered in world space and moves relative to the camera. The label is rendered in screen space and remains fixed near the top center of the window.
 
+## Animation
+
+Animation APIs are manual-update oriented. Game code controls when animation state advances, usually by calling an animation object's `update(dt)` from `KaptanWindow.setLoopCallback`.
+
+Loop modes are shared by animation APIs:
+
+```lua
+KaptanAnimation.ONCE
+KaptanAnimation.LOOP
+KaptanAnimation.PING_PONG
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -890,6 +902,12 @@ List of available functions:
 * shape:setRot(angle)
 * shape:setScl(x, y)
 * shape:setVisible(visible)
+
+### Animation
+
+* KaptanAnimation.ONCE
+* KaptanAnimation.LOOP
+* KaptanAnimation.PING_PONG
 
 ### Audio
 
