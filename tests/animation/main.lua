@@ -51,6 +51,19 @@ color_curve:addKey(DURATION * 0.33, 255, 80, 80, 210, KaptanEase.IN_OUT_SINE)
 color_curve:addKey(DURATION * 0.66, 80, 180, 255, 180, KaptanEase.OUT_BACK)
 color_curve:addKey(DURATION, 255, 255, 255, 255)
 
+local sheet = dofile('tests/animation/crate-sheet.lua')
+local sprite4 = KaptanSprite.new('tests/animation/' .. sheet.texture)
+sprite4:setPos(WINDOW_WIDTH / 2 - 70, WINDOW_HEIGHT / 2 - 70)
+layer:add(sprite4)
+
+local sprite_anim = KaptanSpriteAnimation.new(sprite4)
+sprite_anim:addFrame(sheet.sprites.crate1, 0.25)
+sprite_anim:addFrame(sheet.sprites.crate2, 0.25)
+sprite_anim:addFrame(sheet.sprites.crate3, 0.25)
+sprite_anim:addFrame(sheet.sprites.crate4, 0.25)
+sprite_anim:setLoopMode(KaptanAnimation.PING_PONG)
+sprite_anim:play()
+
 local time = 0
 
 KaptanWindow.setLoopCallback(function()
@@ -63,4 +76,5 @@ KaptanWindow.setLoopCallback(function()
     sprite2:setPos(pos_curve:sample(time))
     sprite3:setRot(rot_curve:sample(time))
     sprite3:setColor(color_curve:sample(time))
+    sprite_anim:update(KaptanWindow.getDeltaTime())
 end)

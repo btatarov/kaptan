@@ -49,7 +49,9 @@ main :: proc() {
     graphics.Vec2CurveLuaBind(L)
     graphics.AngleCurveLuaBind(L)
     graphics.ColorCurveLuaBind(L)
+    graphics.SpriteAnimationLuaBind(L)
     defer {
+        graphics.SpriteAnimationLuaUnbind(L)
         graphics.ColorCurveLuaUnbind(L)
         graphics.AngleCurveLuaUnbind(L)
         graphics.Vec2CurveLuaUnbind(L)

@@ -184,8 +184,7 @@ read_frame_integer_field :: proc "contextless" (L: ^lua.State, frame_idx: i32, t
     return value
 }
 
-@(private="file")
-sprite_frame_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> SpriteFrame {
+SpriteFrameFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> SpriteFrame {
     if ! lua.istable(L, idx) {
         lua.L_typeerror(L, c.int(idx), "table")
     }
@@ -227,6 +226,13 @@ sprite_frame_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> SpriteF
         width = width,
         height = height,
     }
+}
+
+SpriteSetFrame :: proc "contextless" (sprite: ^Sprite, frame: SpriteFrame) {
+    sprite.source = frame.source
+    sprite.offset = frame.offset
+    sprite.width = frame.width
+    sprite.height = frame.height
 }
 
 @(private="file")
@@ -321,12 +327,8 @@ _set_color :: proc "c" (L: ^lua.State) -> i32 {
 @(private="file")
 _set_frame :: proc "c" (L: ^lua.State) -> i32 {
     sprite := SpriteFromLua(L, 1)
-    frame := sprite_frame_from_lua(L, 2)
-
-    sprite.source = frame.source
-    sprite.offset = frame.offset
-    sprite.width = frame.width
-    sprite.height = frame.height
+    frame := SpriteFrameFromLua(L, 2)
+    SpriteSetFrame(sprite, frame)
 
     return 0
 }

@@ -338,6 +338,23 @@ color_curve:addKey(1.0, 255, 0, 0, 128, KaptanEase.OUT_QUAD)
 sprite:setColor(color_curve:sample(0.5))
 ```
 
+Sprite animations play TexturePacker frame tables on a sprite. They are manual-update objects, so call `update(dt)` yourself.
+
+```lua
+local sheet = dofile('tests/spritesheet/sheet.lua')
+local sprite = KaptanSprite.new('tests/spritesheet/' .. sheet.texture)
+local anim = KaptanSpriteAnimation.new(sprite)
+
+anim:addFrame(sheet.sprites.kaptan1, 1 / 12)
+anim:addFrame(sheet.sprites.kaptan2, 1 / 12)
+anim:setLoopMode(KaptanAnimation.LOOP)
+anim:play()
+
+KaptanWindow.setLoopCallback(function()
+    anim:update(KaptanWindow.getDeltaTime())
+end)
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -1000,6 +1017,25 @@ List of available functions:
 * curve:getKeyCount()
 * curve:removeKey(index)
 * curve:sample(time)
+* anim = KaptanSpriteAnimation.new(sprite)
+* anim:addFrame(frame_table, duration)
+* anim:clear()
+* anim:getDuration()
+* anim:getFrameIndex()
+* anim:getLoopMode()
+* anim:getSpeed()
+* anim:getTime()
+* anim:isFinished()
+* anim:isPlaying()
+* anim:pause()
+* anim:play()
+* anim:restart()
+* anim:seek(time)
+* anim:setFrameIndex(index)
+* anim:setLoopMode(mode)
+* anim:setSpeed(speed)
+* anim:stop()
+* anim:update(dt)
 
 ### Audio
 
