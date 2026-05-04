@@ -328,6 +328,16 @@ rot_curve:addKey(1.0, 10)
 local angle = rot_curve:sample(0.5)
 ```
 
+Color curves sample `0..255` RGBA values and return clamped integer channels.
+
+```lua
+local color_curve = KaptanColorCurve.new()
+color_curve:addKey(0.0, 255, 255, 255, 255)
+color_curve:addKey(1.0, 255, 0, 0, 128, KaptanEase.OUT_QUAD)
+
+sprite:setColor(color_curve:sample(0.5))
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -983,6 +993,13 @@ List of available functions:
 * curve:removeKey(index)
 * curve:sample(time)
 * curve:setShortestPath(enabled)
+* curve = KaptanColorCurve.new()
+* curve:addKey(time, r, g, b, a, ease)
+* curve:clear()
+* curve:getDuration()
+* curve:getKeyCount()
+* curve:removeKey(index)
+* curve:sample(time)
 
 ### Audio
 

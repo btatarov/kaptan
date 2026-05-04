@@ -45,6 +45,12 @@ rot_curve:setShortestPath(false)
 rot_curve:addKey(0, 0, KaptanEase.OUT_BACK)
 rot_curve:addKey(DURATION, 360)
 
+local color_curve = KaptanColorCurve.new()
+color_curve:addKey(0, 255, 255, 255, 255, KaptanEase.OUT_QUAD)
+color_curve:addKey(DURATION * 0.33, 255, 80, 80, 210, KaptanEase.IN_OUT_SINE)
+color_curve:addKey(DURATION * 0.66, 80, 180, 255, 180, KaptanEase.OUT_BACK)
+color_curve:addKey(DURATION, 255, 255, 255, 255)
+
 local time = 0
 
 KaptanWindow.setLoopCallback(function()
@@ -56,4 +62,5 @@ KaptanWindow.setLoopCallback(function()
     sprite:setPos(x_curve:sample(time), y)
     sprite2:setPos(pos_curve:sample(time))
     sprite3:setRot(rot_curve:sample(time))
+    sprite3:setColor(color_curve:sample(time))
 end)
