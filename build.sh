@@ -14,7 +14,7 @@ fi
 
 extra_args="-use-separate-modules -show-timings"
 if [ $build == "debug" ]; then
-    extra_args="$extra_args -debug -vet -strict-style -o:none"
+    extra_args="$extra_args -debug -vet -strict-style -o:none -sanitize:address"
 else
     extra_args="$extra_args -source-code-locations:obfuscated -o:speed"
 fi

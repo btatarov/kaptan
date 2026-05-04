@@ -20,6 +20,7 @@ main :: proc() {
     when ODIN_DEBUG {
         tracking_allocator: mem.Tracking_Allocator
         mem.tracking_allocator_init(&tracking_allocator, context.allocator)
+        defer mem.tracking_allocator_destroy(&tracking_allocator)
         context.allocator = mem.tracking_allocator(&tracking_allocator)
         core.SetDefaultContext(context)
         defer if len(tracking_allocator.allocation_map) > 0 || len(tracking_allocator.bad_free_array) > 0 {
