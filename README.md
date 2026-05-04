@@ -291,6 +291,13 @@ KaptanAnimation.LOOP
 KaptanAnimation.PING_PONG
 ```
 
+Easing functions map a normalized time value to an eased value. `KaptanEase.sample(ease, t)` clamps `t` to `0..1`.
+
+```lua
+local t = 0.5
+local eased = KaptanEase.sample(KaptanEase.OUT_QUAD, t)
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -908,6 +915,21 @@ List of available functions:
 * KaptanAnimation.ONCE
 * KaptanAnimation.LOOP
 * KaptanAnimation.PING_PONG
+* KaptanEase.sample(ease, t)
+* KaptanEase.LINEAR
+* KaptanEase.STEP
+* KaptanEase.IN_QUAD
+* KaptanEase.OUT_QUAD
+* KaptanEase.IN_OUT_QUAD
+* KaptanEase.IN_CUBIC
+* KaptanEase.OUT_CUBIC
+* KaptanEase.IN_OUT_CUBIC
+* KaptanEase.IN_SINE
+* KaptanEase.OUT_SINE
+* KaptanEase.IN_OUT_SINE
+* KaptanEase.IN_BACK
+* KaptanEase.OUT_BACK
+* KaptanEase.IN_OUT_BACK
 
 ### Audio
 

@@ -44,7 +44,9 @@ main :: proc() {
     graphics.TextLuaBind(L)
     graphics.CameraLuaBind(L)
     graphics.AnimationLuaBind(L)
+    graphics.EaseLuaBind(L)
     defer {
+        graphics.EaseLuaUnbind(L)
         graphics.AnimationLuaUnbind(L)
         graphics.CameraLuaUnbind(L)
         graphics.TextLuaUnbind(L)
