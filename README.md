@@ -283,6 +283,8 @@ The player is rendered in world space and moves relative to the camera. The labe
 
 Animation APIs are manual-update oriented. Game code controls when animation state advances, usually by calling an animation object's `update(dt)` from `KaptanWindow.setLoopCallback`.
 
+### Loop Modes
+
 Loop modes are shared by animation APIs:
 
 ```lua
@@ -291,12 +293,16 @@ KaptanAnimation.LOOP
 KaptanAnimation.PING_PONG
 ```
 
+### Easing
+
 Easing functions map a normalized time value to an eased value. `KaptanEase.sample(ease, t)` clamps `t` to `0..1`.
 
 ```lua
 local t = 0.5
 local eased = KaptanEase.sample(KaptanEase.OUT_QUAD, t)
 ```
+
+### Scalar Curves
 
 Scalar curves sample a number from time-based keyframes. Easing belongs to the segment starting at the key where it is set.
 
@@ -308,6 +314,8 @@ curve:addKey(1.0, 100)
 local value = curve:sample(0.5)
 ```
 
+### Vector Curves
+
 Vector curves sample an `x, y` pair with the same keyframe and easing rules:
 
 ```lua
@@ -317,6 +325,8 @@ pos_curve:addKey(1.0, 100, 50)
 
 local x, y = pos_curve:sample(0.5)
 ```
+
+### Angle Curves
 
 Angle curves sample rotation in degrees. They use shortest-path interpolation by default, so `350` to `10` rotates through `0`. Disable shortest-path interpolation when you want raw numeric interpolation.
 
@@ -328,6 +338,8 @@ rot_curve:addKey(1.0, 10)
 local angle = rot_curve:sample(0.5)
 ```
 
+### Color Curves
+
 Color curves sample `0..255` RGBA values and return clamped integer channels.
 
 ```lua
@@ -337,6 +349,8 @@ color_curve:addKey(1.0, 255, 0, 0, 128, KaptanEase.OUT_QUAD)
 
 sprite:setColor(color_curve:sample(0.5))
 ```
+
+### Sprite Animation
 
 Sprite animations play TexturePacker frame tables on a sprite. They are manual-update objects, so call `update(dt)` yourself.
 
@@ -969,9 +983,14 @@ List of available functions:
 
 ### Animation
 
+#### Animation Constants
+
 * KaptanAnimation.ONCE
 * KaptanAnimation.LOOP
 * KaptanAnimation.PING_PONG
+
+#### Easing
+
 * KaptanEase.sample(ease, t)
 * KaptanEase.LINEAR
 * KaptanEase.STEP
@@ -987,6 +1006,9 @@ List of available functions:
 * KaptanEase.IN_BACK
 * KaptanEase.OUT_BACK
 * KaptanEase.IN_OUT_BACK
+
+#### Scalar Curve
+
 * curve = KaptanAnimationCurve.new()
 * curve:addKey(time, value, ease)
 * curve:clear()
@@ -994,6 +1016,9 @@ List of available functions:
 * curve:getKeyCount()
 * curve:removeKey(index)
 * curve:sample(time)
+
+#### Vector Curve
+
 * curve = KaptanVec2Curve.new()
 * curve:addKey(time, x, y, ease)
 * curve:clear()
@@ -1001,6 +1026,9 @@ List of available functions:
 * curve:getKeyCount()
 * curve:removeKey(index)
 * curve:sample(time)
+
+#### Angle Curve
+
 * curve = KaptanAngleCurve.new()
 * curve:addKey(time, angle, ease)
 * curve:clear()
@@ -1010,6 +1038,9 @@ List of available functions:
 * curve:removeKey(index)
 * curve:sample(time)
 * curve:setShortestPath(enabled)
+
+#### Color Curve
+
 * curve = KaptanColorCurve.new()
 * curve:addKey(time, r, g, b, a, ease)
 * curve:clear()
@@ -1017,6 +1048,9 @@ List of available functions:
 * curve:getKeyCount()
 * curve:removeKey(index)
 * curve:sample(time)
+
+#### Sprite Animation
+
 * anim = KaptanSpriteAnimation.new(sprite)
 * anim:addFrame(frame_table, duration)
 * anim:clear()
