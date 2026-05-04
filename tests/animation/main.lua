@@ -67,14 +67,12 @@ sprite_anim:play()
 local time = 0
 
 KaptanWindow.setLoopCallback(function()
-    time = time + KaptanWindow.getDeltaTime()
-    if time > DURATION then
-        time = time - DURATION
-    end
+    local dt = KaptanWindow.getDeltaTime()
+    time = math.min(time + dt, DURATION)
 
     sprite:setPos(x_curve:sample(time), y)
     sprite2:setPos(pos_curve:sample(time))
     sprite3:setRot(rot_curve:sample(time))
     sprite3:setColor(color_curve:sample(time))
-    sprite_anim:update(KaptanWindow.getDeltaTime())
+    sprite_anim:update(dt)
 end)
