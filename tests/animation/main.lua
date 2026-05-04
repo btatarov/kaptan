@@ -36,6 +36,15 @@ local pos_curve = KaptanVec2Curve.new()
 pos_curve:addKey(0, top_right_x, top_right_y, KaptanEase.OUT_BACK)
 pos_curve:addKey(DURATION, bottom_left_x, bottom_left_y)
 
+local sprite3 = KaptanSprite.new('tests/sprites/kaptan1.png')
+sprite3:setPos(0, 0)
+layer:add(sprite3)
+
+local rot_curve = KaptanAngleCurve.new()
+rot_curve:setShortestPath(false)
+rot_curve:addKey(0, 0, KaptanEase.OUT_BACK)
+rot_curve:addKey(DURATION, 360)
+
 local time = 0
 
 KaptanWindow.setLoopCallback(function()
@@ -46,4 +55,5 @@ KaptanWindow.setLoopCallback(function()
 
     sprite:setPos(x_curve:sample(time), y)
     sprite2:setPos(pos_curve:sample(time))
+    sprite3:setRot(rot_curve:sample(time))
 end)

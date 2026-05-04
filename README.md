@@ -318,6 +318,16 @@ pos_curve:addKey(1.0, 100, 50)
 local x, y = pos_curve:sample(0.5)
 ```
 
+Angle curves sample rotation in degrees. They use shortest-path interpolation by default, so `350` to `10` rotates through `0`. Disable shortest-path interpolation when you want raw numeric interpolation.
+
+```lua
+local rot_curve = KaptanAngleCurve.new()
+rot_curve:addKey(0.0, 350)
+rot_curve:addKey(1.0, 10)
+
+local angle = rot_curve:sample(0.5)
+```
+
 ## Object Lifetime And Ownership
 
 Kaptan objects are split between Lua handles and Odin-owned runtime objects.
@@ -964,6 +974,15 @@ List of available functions:
 * curve:getKeyCount()
 * curve:removeKey(index)
 * curve:sample(time)
+* curve = KaptanAngleCurve.new()
+* curve:addKey(time, angle, ease)
+* curve:clear()
+* curve:getDuration()
+* curve:getKeyCount()
+* curve:isShortestPath()
+* curve:removeKey(index)
+* curve:sample(time)
+* curve:setShortestPath(enabled)
 
 ### Audio
 
