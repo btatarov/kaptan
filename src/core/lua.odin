@@ -6,8 +6,6 @@ import "core:strings"
 
 import lua "vendor:lua/5.4"
 
-KAPTAN_METHODS_FIELD :: "__kaptan_methods"
-
 @private LuaState: ^lua.State
 
 InitLuaState :: proc() -> ^lua.State {
@@ -24,14 +22,6 @@ GetLuaState :: proc() -> ^lua.State {
     return LuaState
 }
 
-LuaCheckOK :: proc(L: ^lua.State, status: lua.Status) -> bool {
-    if status != lua.OK {
-        log.errorf("%s", lua.tostring(L, -1))
-        return false
-    }
-    return true
-}
-
 LuaRun :: proc(L: ^lua.State, args: []string) -> bool {
     if len(args) < 1 {
         LuaCheckOK(L, lua.L_loadfile(L, "main.lua")) or_return
@@ -43,6 +33,14 @@ LuaRun :: proc(L: ^lua.State, args: []string) -> bool {
     status := lua.pcall(L, 0, 0, 0)
     LuaCheckOK(L, lua.Status(status)) or_return
 
+    return true
+}
+
+LuaCheckOK :: proc(L: ^lua.State, status: lua.Status) -> bool {
+    if status != lua.OK {
+        log.errorf("%s", lua.tostring(L, -1))
+        return false
+    }
     return true
 }
 
@@ -90,14 +88,9 @@ LuaBindClassWithConstants :: proc(
     lua.pop(L, 2)
 }
 
-LuaBindClassMetatable :: proc(L: ^lua.State, name: cstring) {
-    index := lua.gettop(L)
-    lua.L_getmetatable(L, fmt.ctprintf("%sMT", name))
-    assert(lua.istable(L, -1), fmt.tprintf("%sMT is not a table", name))
-    lua.setmetatable(L, index)
-}
+LuaBindSingleton :: proc { LuaBindSingletonSimple, LuaBindSingletonWithConstants }
 
-LuaBindSingleton :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) {
+LuaBindSingletonSimple :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L_Reg) {
     lua.newtable(L)
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
@@ -125,6 +118,13 @@ LuaBindSingletonWithConstants :: proc(
     lua.pop(L, 1)
 }
 
+LuaSetClassMetatable :: proc(L: ^lua.State, name: cstring) {
+    index := lua.gettop(L)
+    lua.L_getmetatable(L, fmt.ctprintf("%sMT", name))
+    assert(lua.istable(L, -1), fmt.tprintf("%sMT is not a table", name))
+    lua.setmetatable(L, index)
+}
+
 LuaIsUserdataType :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name: cstring) -> bool {
     if ! lua.isuserdata(L, idx) {
         return false
@@ -148,12 +148,6 @@ LuaUserdataHandle :: proc "contextless" (L: ^lua.State, idx: i32, metatable_name
     return handle^
 }
 
-LuaGetField :: proc "contextless" (L: ^lua.State, idx, key: i32) {
-    abs_idx := LuaGetAbsIndex(L, idx)
-	lua.pushinteger(L, lua.Integer(key))
-	lua.gettable(L, abs_idx)
-}
-
 LuaGetAbsIndex :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     if idx < 0 {
         return lua.gettop(L) + idx + 1
@@ -161,22 +155,28 @@ LuaGetAbsIndex :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     return idx
 }
 
+LuaGetField :: proc "contextless" (L: ^lua.State, idx, key: i32) {
+    abs_idx := LuaGetAbsIndex(L, idx)
+    lua.pushinteger(L, lua.Integer(key))
+    lua.gettable(L, abs_idx)
+}
+
 LuaPushTableItr :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     itr := LuaGetAbsIndex(L, idx)
-	lua.pushnil(L)
-	lua.pushnil(L)
-	lua.pushnil(L)
-	return itr
+    lua.pushnil(L)
+    lua.pushnil(L)
+    lua.pushnil(L)
+    return itr
 }
 
 LuaTableItrNext :: proc "contextless" (L: ^lua.State, itr: i32) -> bool {
-    lua.pop(L, 2)  // pop the prev key/value; leave the key
+    lua.pop(L, 2) // pop the prev key/value; leave the key
     if lua.next(L, itr) != 0 {
-		LuaCopyToTop(L, -2)
-		LuaMoveToTop(L, -2)
-		return true
-	}
-	return false
+        LuaCopyToTop(L, -2)
+        LuaMoveToTop(L, -2)
+        return true
+    }
+    return false
 }
 
 LuaCopyToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
@@ -186,25 +186,11 @@ LuaCopyToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
 LuaMoveToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
     abs_idx := LuaGetAbsIndex(L, idx)
     lua.pushvalue(L, abs_idx)
-	lua.remove(L, abs_idx)
+    lua.remove(L, abs_idx)
 }
 
 @(private="file")
-lua_ensure_uservalue_table :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
-    abs_idx := LuaGetAbsIndex(L, idx)
-
-    lua.getuservalue(L, abs_idx)
-    if lua.istable(L, -1) {
-        return lua.gettop(L)
-    }
-    lua.pop(L, 1)
-
-    lua.newtable(L)
-    lua.pushvalue(L, -1)
-    lua.setuservalue(L, abs_idx)
-
-    return lua.gettop(L)
-}
+KAPTAN_METHODS_FIELD :: "__kaptan_methods"
 
 @(private="file")
 lua_setup_class_metatable :: proc(
@@ -233,6 +219,23 @@ lua_setup_class_metatable :: proc(
     lua.pushstring(L, "__newindex")
     lua.pushcfunction(L, lua.CFunction(lua_userdata_newindex))
     lua.settable(L, -3)
+}
+
+@(private="file")
+lua_ensure_uservalue_table :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
+    abs_idx := LuaGetAbsIndex(L, idx)
+
+    lua.getuservalue(L, abs_idx)
+    if lua.istable(L, -1) {
+        return lua.gettop(L)
+    }
+    lua.pop(L, 1)
+
+    lua.newtable(L)
+    lua.pushvalue(L, -1)
+    lua.setuservalue(L, abs_idx)
+
+    return lua.gettop(L)
 }
 
 @(private="file")

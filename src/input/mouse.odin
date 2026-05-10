@@ -28,7 +28,7 @@ MouseLuaBind :: proc(L: ^lua.State) {
         constants[fmt.ctprintf("BUTTON_%s", name)] = u32(rl.MouseButton(name))
     }
 
-    core.LuaBindSingletonWithConstants(L, "KaptanMouse", &reg_table, &constants)
+    core.LuaBindSingleton(L, "KaptanMouse", &reg_table, &constants)
 }
 
 MouseLuaUnbind :: proc(L: ^lua.State) {

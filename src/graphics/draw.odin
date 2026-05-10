@@ -269,7 +269,7 @@ new_shape :: proc(L: ^lua.State, kind: DrawShapeKind) -> ^DrawShape {
     InitDrawShape(shape, kind)
     handle^ = shape
 
-    core.LuaBindClassMetatable(L, "KaptanDraw")
+    core.LuaSetClassMetatable(L, "KaptanDraw")
 
     return shape
 }

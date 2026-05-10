@@ -144,7 +144,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^Curve)(lua.newuserdata(L, size_of(^Curve)))
     handle^ = curve
-    core.LuaBindClassMetatable(L, "KaptanAnimationCurve")
+    core.LuaSetClassMetatable(L, "KaptanAnimationCurve")
 
     return 1
 }

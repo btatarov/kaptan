@@ -32,7 +32,7 @@ AnimationLuaBind :: proc(L: ^lua.State) {
     constants["LOOP"] = u32(AnimationLoopMode.Loop)
     constants["PING_PONG"] = u32(AnimationLoopMode.Ping_Pong)
 
-    core.LuaBindSingletonWithConstants(L, "KaptanAnimation", &reg_table, &constants)
+    core.LuaBindSingleton(L, "KaptanAnimation", &reg_table, &constants)
 }
 
 AnimationLuaUnbind :: proc(L: ^lua.State) {

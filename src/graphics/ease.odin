@@ -46,7 +46,7 @@ EaseLuaBind :: proc(L: ^lua.State) {
     constants["OUT_BACK"]     = u32(EaseKind.Out_Back)
     constants["IN_OUT_BACK"]  = u32(EaseKind.In_Out_Back)
 
-    core.LuaBindSingletonWithConstants(L, "KaptanEase", &reg_table, &constants)
+    core.LuaBindSingleton(L, "KaptanEase", &reg_table, &constants)
 }
 
 EaseLuaUnbind :: proc(L: ^lua.State) {

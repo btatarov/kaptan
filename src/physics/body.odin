@@ -243,7 +243,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^PhysicsBody)(lua.newuserdata(L, size_of(^PhysicsBody)))
     handle^ = body
-    core.LuaBindClassMetatable(L, "KaptanPhysicsBody")
+    core.LuaSetClassMetatable(L, "KaptanPhysicsBody")
 
     return 1
 }

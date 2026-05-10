@@ -25,7 +25,7 @@ KeyboardLuaBind :: proc(L: ^lua.State) {
         constants[fmt.ctprintf("KEY_%s", name)] = u32(rl.KeyboardKey(name))
     }
 
-    core.LuaBindSingletonWithConstants(L, "KaptanKeyboard", &reg_table, &constants)
+    core.LuaBindSingleton(L, "KaptanKeyboard", &reg_table, &constants)
 }
 
 KeyboardLuaUnbind :: proc(L: ^lua.State) {

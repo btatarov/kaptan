@@ -38,7 +38,7 @@ GamepadLuaBind :: proc(L: ^lua.State) {
         constants[fmt.ctprintf("AXIS_%s", name)] = u32(rl.GamepadAxis(name))
     }
 
-    core.LuaBindSingletonWithConstants(L, "KaptanGamepad", &reg_table, &constants)
+    core.LuaBindSingleton(L, "KaptanGamepad", &reg_table, &constants)
 }
 
 GamepadLuaUnbind :: proc(L: ^lua.State) {

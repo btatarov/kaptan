@@ -228,7 +228,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     AudioSystemRegisterLiveChannel(channel)
     handle^ = channel
 
-    core.LuaBindClassMetatable(L, "KaptanAudioChannel")
+    core.LuaSetClassMetatable(L, "KaptanAudioChannel")
 
     return 1
 }

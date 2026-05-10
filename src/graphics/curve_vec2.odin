@@ -140,7 +140,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^Vec2Curve)(lua.newuserdata(L, size_of(^Vec2Curve)))
     handle^ = curve
-    core.LuaBindClassMetatable(L, "KaptanVec2Curve")
+    core.LuaSetClassMetatable(L, "KaptanVec2Curve")
 
     return 1
 }

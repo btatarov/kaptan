@@ -212,7 +212,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     InitLayer(layer)
     handle^ = layer
 
-    core.LuaBindClassMetatable(L, "KaptanLayer")
+    core.LuaSetClassMetatable(L, "KaptanLayer")
 
     return 1
 }

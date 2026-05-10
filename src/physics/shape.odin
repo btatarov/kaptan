@@ -202,7 +202,7 @@ physics_shape_push_lua :: proc(L: ^lua.State, shape: ^PhysicsShape, owns: bool) 
     handle := (^PhysicsShapeHandle)(lua.newuserdata(L, size_of(PhysicsShapeHandle)))
     handle.shape = shape
     handle.owns = owns
-    core.LuaBindClassMetatable(L, "KaptanPhysicsShape")
+    core.LuaSetClassMetatable(L, "KaptanPhysicsShape")
 }
 
 @(private="file")

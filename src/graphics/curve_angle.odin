@@ -173,7 +173,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^AngleCurve)(lua.newuserdata(L, size_of(^AngleCurve)))
     handle^ = curve
-    core.LuaBindClassMetatable(L, "KaptanAngleCurve")
+    core.LuaSetClassMetatable(L, "KaptanAngleCurve")
 
     return 1
 }

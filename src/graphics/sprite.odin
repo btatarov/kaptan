@@ -247,7 +247,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     InitSprite(sprite, texture)
     handle^ = sprite
 
-    core.LuaBindClassMetatable(L, "KaptanSprite")
+    core.LuaSetClassMetatable(L, "KaptanSprite")
 
     return 1
 }

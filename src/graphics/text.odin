@@ -154,7 +154,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
     InitText(text, font, content, font_size)
     handle^ = text
 
-    core.LuaBindClassMetatable(L, "KaptanText")
+    core.LuaSetClassMetatable(L, "KaptanText")
 
     return 1
 }

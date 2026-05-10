@@ -150,7 +150,7 @@ _new :: proc "c" (L: ^lua.State) -> i32 {
 
     handle := (^^SpriteAnimation)(lua.newuserdata(L, size_of(^SpriteAnimation)))
     handle^ = animation
-    core.LuaBindClassMetatable(L, "KaptanSpriteAnimation")
+    core.LuaSetClassMetatable(L, "KaptanSpriteAnimation")
 
     return 1
 }
