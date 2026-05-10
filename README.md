@@ -383,6 +383,29 @@ The important fields behind the scenes are `refs` and `is_gone`.
 
 These solve different problems. Ref counts prevent use-after-free while a layer, renderer, or audio system still references an object. The gone flag lets Lua garbage collection request removal from engine lists without freeing an object that is still referenced by the engine.
 
+Kaptan userdata can also store Lua-side fields and methods. `object:setInterface(interface_table)` attaches a Lua interface table to that native object while keeping the native Kaptan metatable intact. Lua lookup checks the attached interface first, then falls back to native Kaptan methods, so custom classes can override native method names when needed.
+
+```lua
+local interface = {}
+interface.__index = interface
+
+function interface:init(value)
+    self.value = value
+end
+
+function interface:half()
+    return self:sample(0.5)
+end
+
+local curve = KaptanAnimationCurve.new()
+curve:setInterface(interface)
+curve:init(20)
+
+print(curve.value)         -- Lua-side field
+print(curve:half())        -- Lua-side method
+print(curve:getKeyCount()) -- native Kaptan fallback
+```
+
 ### Lua Handles And Engine References
 
 Consider this example:
@@ -883,6 +906,8 @@ Use `KaptanMouse.getPos()` when interacting with GUI or HUD objects.
 ## Lua API
 
 List of available functions:
+
+All Kaptan userdata objects support `object:setInterface(interface_table)`. This includes layers, sprites, draw shapes, text, audio channels, animation curves, sprite animations, physics bodies, and physics shapes.
 
 ### Window
 

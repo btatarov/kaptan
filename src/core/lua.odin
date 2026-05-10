@@ -6,6 +6,8 @@ import "core:strings"
 
 import lua "vendor:lua/5.4"
 
+KAPTAN_METHODS_FIELD :: "__kaptan_methods"
+
 @private LuaState: ^lua.State
 
 InitLuaState :: proc() -> ^lua.State {
@@ -59,16 +61,7 @@ LuaBindClassSimple :: proc(
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
 
-    lua.L_newmetatable(L, fmt.ctprintf("%sMT", name))
-
-    lua.pushstring(L, "__gc")
-    lua.pushcfunction(L, lua.CFunction(destructor))
-    lua.settable(L, -3)
-
-    lua.pushstring(L, "__index")
-    lua.newtable(L)
-    lua.L_setfuncs(L, raw_data(instance_reg_table[:]), 0)
-    lua.settable(L, -3)
+    lua_setup_class_metatable(L, name, instance_reg_table, destructor)
 
     lua.pop(L, 2)
 }
@@ -92,16 +85,7 @@ LuaBindClassWithConstants :: proc(
         lua.setfield(L, -2, fmt.ctprintf("%s", name))
     }
 
-    lua.L_newmetatable(L, fmt.ctprintf("%sMT", name))
-
-    lua.pushstring(L, "__gc")
-    lua.pushcfunction(L, lua.CFunction(destructor))
-    lua.settable(L, -3)
-
-    lua.pushstring(L, "__index")
-    lua.newtable(L)
-    lua.L_setfuncs(L, raw_data(instance_reg_table[:]), 0)
-    lua.settable(L, -3)
+    lua_setup_class_metatable(L, name, instance_reg_table, destructor)
 
     lua.pop(L, 2)
 }
@@ -203,4 +187,109 @@ LuaMoveToTop :: proc "contextless" (L: ^lua.State, idx: i32) {
     abs_idx := LuaGetAbsIndex(L, idx)
     lua.pushvalue(L, abs_idx)
 	lua.remove(L, abs_idx)
+}
+
+@(private="file")
+lua_ensure_uservalue_table :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
+    abs_idx := LuaGetAbsIndex(L, idx)
+
+    lua.getuservalue(L, abs_idx)
+    if lua.istable(L, -1) {
+        return lua.gettop(L)
+    }
+    lua.pop(L, 1)
+
+    lua.newtable(L)
+    lua.pushvalue(L, -1)
+    lua.setuservalue(L, abs_idx)
+
+    return lua.gettop(L)
+}
+
+@(private="file")
+lua_setup_class_metatable :: proc(
+    L: ^lua.State,
+    name: cstring,
+    instance_reg_table: ^[]lua.L_Reg,
+    destructor: proc "c" (L: ^lua.State) -> i32,
+) {
+    lua.L_newmetatable(L, fmt.ctprintf("%sMT", name))
+
+    lua.pushstring(L, "__gc")
+    lua.pushcfunction(L, lua.CFunction(destructor))
+    lua.settable(L, -3)
+
+    lua.pushstring(L, KAPTAN_METHODS_FIELD)
+    lua.newtable(L)
+    lua.L_setfuncs(L, raw_data(instance_reg_table[:]), 0)
+    lua.pushcfunction(L, lua.CFunction(lua_userdata_set_interface))
+    lua.setfield(L, -2, "setInterface")
+    lua.settable(L, -3)
+
+    lua.pushstring(L, "__index")
+    lua.pushcfunction(L, lua.CFunction(lua_userdata_index))
+    lua.settable(L, -3)
+
+    lua.pushstring(L, "__newindex")
+    lua.pushcfunction(L, lua.CFunction(lua_userdata_newindex))
+    lua.settable(L, -3)
+}
+
+@(private="file")
+lua_userdata_set_interface :: proc "c" (L: ^lua.State) -> i32 {
+    if ! lua.isuserdata(L, 1) {
+        return i32(lua.L_typeerror(L, 1, "userdata"))
+    }
+    if ! lua.istable(L, 2) {
+        return i32(lua.L_typeerror(L, 2, "table"))
+    }
+
+    member_idx := lua_ensure_uservalue_table(L, 1)
+    lua.pushvalue(L, 2)
+    lua.setmetatable(L, member_idx)
+    lua.pop(L, 1)
+
+    return 0
+}
+
+@(private="file")
+lua_userdata_index :: proc "c" (L: ^lua.State) -> i32 {
+    lua.getuservalue(L, 1)
+    if lua.istable(L, -1) {
+        lua.pushvalue(L, 2)
+        lua.gettable(L, -2)
+        if ! lua.isnil(L, -1) {
+            return 1
+        }
+        lua.pop(L, 1)
+    }
+    lua.pop(L, 1)
+
+    if lua.getmetatable(L, 1) != 0 {
+        lua.getfield(L, -1, KAPTAN_METHODS_FIELD)
+        if lua.istable(L, -1) {
+            lua.pushvalue(L, 2)
+            lua.gettable(L, -2)
+            return 1
+        }
+        lua.pop(L, 1)
+    }
+
+    lua.pushnil(L)
+    return 1
+}
+
+@(private="file")
+lua_userdata_newindex :: proc "c" (L: ^lua.State) -> i32 {
+    if ! lua.isuserdata(L, 1) {
+        return i32(lua.L_typeerror(L, 1, "userdata"))
+    }
+
+    member_idx := lua_ensure_uservalue_table(L, 1)
+    lua.pushvalue(L, 2)
+    lua.pushvalue(L, 3)
+    lua.settable(L, member_idx)
+    lua.pop(L, 1)
+
+    return 0
 }
