@@ -21,6 +21,7 @@ PhysicsSystem :: struct {
     tick_rate:       f32,
     accumulator:     f32,
     debug_draw:      bool,
+    paused:          bool,
 }
 
 PhysicsQueryContext :: struct {
@@ -104,6 +105,7 @@ PhysicsSystemDestroy :: proc() {
     physics_system.initialized = false
     physics_system.world = {}
     physics_system.accumulator = 0
+    physics_system.paused = false
 }
 
 PhysicsSystemClear :: proc() {
@@ -112,9 +114,11 @@ PhysicsSystemClear :: proc() {
     }
 
     gravity := b2.World_GetGravity(physics_system.world)
+    paused := physics_system.paused
     PhysicsSystemDestroy()
     PhysicsSystemInit()
     b2.World_SetGravity(physics_system.world, gravity)
+    physics_system.paused = paused
 }
 
 PhysicsSystemUpdate :: proc(dt: f32) {
@@ -124,6 +128,10 @@ PhysicsSystemUpdate :: proc(dt: f32) {
 
     clear_contact_events()
     clear_sensor_events()
+
+    if physics_system.paused {
+        return
+    }
 
     frame_time := min(dt, MAX_FRAME_TIME)
     tick_dt := 1 / physics_system.tick_rate
@@ -169,7 +177,25 @@ PhysicsSystemStep :: proc(L: ^lua.State, dt: f32) {
         lua.L_argerror(L, 1, "dt must be > 0")
     }
 
+    if physics_system.paused {
+        return
+    }
+
     step_world(dt)
+}
+
+PhysicsSystemPause :: proc "contextless" () {
+    physics_system.paused = true
+    physics_system.accumulator = 0
+}
+
+PhysicsSystemResume :: proc "contextless" () {
+    physics_system.paused = false
+    physics_system.accumulator = 0
+}
+
+PhysicsSystemIsPaused :: proc "contextless" () -> bool {
+    return physics_system.paused
 }
 
 PhysicsSystemRequireReady :: proc "contextless" (L: ^lua.State) {
@@ -194,9 +220,12 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
         { "getUnitsPerMeter", _get_units_per_meter },
         { "init",             _init },
         { "isDebugDraw",      _is_debug_draw },
+        { "isPaused",         _is_paused },
         { "isReady",          _is_ready },
+        { "pause",            _pause },
         { "queryAABB",        _query_aabb },
         { "raycast",          _raycast },
+        { "resume",           _resume },
         { "setGravity",       _set_gravity },
         { "setDebugDraw",     _set_debug_draw },
         { "setSubsteps",      _set_substeps },
@@ -211,6 +240,7 @@ PhysicsLuaBind :: proc(L: ^lua.State) {
     physics_system.tick_rate = DEFAULT_TICK_RATE
     physics_system.accumulator = 0
     physics_system.debug_draw = false
+    physics_system.paused = false
     physics_system.bodies = make([dynamic]^PhysicsBody)
     physics_system.contact_events = make([dynamic]PhysicsContactEvent)
     physics_system.sensor_events = make([dynamic]PhysicsSensorEvent)
@@ -703,9 +733,21 @@ _is_debug_draw :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_is_paused :: proc "c" (L: ^lua.State) -> i32 {
+    lua.pushboolean(L, b32(PhysicsSystemIsPaused()))
+    return 1
+}
+
+@(private="file")
 _is_ready :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(physics_system.initialized && b2.World_IsValid(physics_system.world)))
     return 1
+}
+
+@(private="file")
+_pause :: proc "c" (L: ^lua.State) -> i32 {
+    PhysicsSystemPause()
+    return 0
 }
 
 @(private="file")
@@ -757,6 +799,12 @@ _raycast :: proc "c" (L: ^lua.State) -> i32 {
     push_ray_result(L, result)
 
     return 1
+}
+
+@(private="file")
+_resume :: proc "c" (L: ^lua.State) -> i32 {
+    PhysicsSystemResume()
+    return 0
 }
 
 @(private="file")

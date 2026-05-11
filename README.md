@@ -682,6 +682,8 @@ Physics is updated automatically by Kaptan while the window loop is running. It 
 
 Use `KaptanPhysics.step(dt)` only for scripts that do not open a window, such as smoke tests or offline simulations. Do not call it inside `KaptanWindow.setLoopCallback`, because the window loop already steps physics automatically.
 
+Use `KaptanPhysics.pause()` and `KaptanPhysics.resume()` for game pause flows. Paused physics skips both automatic window-loop updates and manual `KaptanPhysics.step(dt)` calls; queries, debug draw, and event polling remain available.
+
 ```lua
 KaptanPhysics.setGravity(0, 0)
 KaptanPhysics.setSubsteps(2)
@@ -1142,9 +1144,12 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * KaptanPhysics.getUnitsPerMeter()
 * KaptanPhysics.init()
 * KaptanPhysics.isDebugDraw()
+* KaptanPhysics.isPaused()
 * KaptanPhysics.isReady()
+* KaptanPhysics.pause()
 * KaptanPhysics.queryAABB(x, y, width, height, options)
 * KaptanPhysics.raycast(x1, y1, x2, y2, options)
+* KaptanPhysics.resume()
 * KaptanPhysics.setDebugDraw(enabled)
 * KaptanPhysics.setGravity(x, y)
 * KaptanPhysics.setSubsteps(count)

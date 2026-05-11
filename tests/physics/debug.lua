@@ -26,6 +26,29 @@ KaptanPhysics.setDebugDraw(true)
 print('debug draw after set', KaptanPhysics.isDebugDraw())
 KaptanPhysics.setDebugDraw(false)
 print('debug draw after clear', KaptanPhysics.isDebugDraw())
+print('physics paused before pause', KaptanPhysics.isPaused())
+KaptanPhysics.pause()
+print('physics paused after pause', KaptanPhysics.isPaused())
+
+local paused_body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
+paused_body:setPos(0, 0)
+paused_body:setVelocity(60, 0)
+KaptanPhysics.step(1 / 60)
+local paused_x = paused_body:getPos()
+print('paused manual step kept body still', paused_x == 0)
+for _ = 1, 3 do
+    paused_body:setVelocity(60, 0)
+    KaptanPhysics.step(1 / 60)
+end
+local paused_velocity_x = paused_body:getPos()
+print('paused setVelocity kept body still', paused_velocity_x == 0)
+
+KaptanPhysics.resume()
+print('physics paused after resume', KaptanPhysics.isPaused())
+KaptanPhysics.step(1 / 60)
+local resumed_x = paused_body:getPos()
+print('resumed manual step moved body', resumed_x > 0)
+paused_body:destroy()
 
 local CATEGORY_PLAYER = 1 << 0
 local CATEGORY_ENEMY = 1 << 1
