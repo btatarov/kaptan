@@ -86,6 +86,8 @@ RendererDraw :: proc() {
                 item.shape->draw()
             case .Text:
                 item.text->draw()
+            case .TextBox:
+                item.text_box->draw()
             }
         }
     }

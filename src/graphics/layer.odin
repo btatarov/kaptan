@@ -11,13 +11,15 @@ RenderItemKind :: enum {
     Sprite,
     DrawShape,
     Text,
+    TextBox,
 }
 
 RenderItem :: struct {
-    kind:   RenderItemKind,
-    sprite: ^Sprite,
-    shape:  ^DrawShape,
-    text:   ^Text,
+    kind:     RenderItemKind,
+    sprite:   ^Sprite,
+    shape:    ^DrawShape,
+    text:     ^Text,
+    text_box: ^TextBox,
 }
 
 Layer :: struct {
@@ -134,6 +136,8 @@ add_item_ref :: proc(item: RenderItem) {
         DrawShapeAddRef(item.shape)
     case .Text:
         TextAddRef(item.text)
+    case .TextBox:
+        TextBoxAddRef(item.text_box)
     }
 }
 
@@ -146,6 +150,8 @@ release_item_ref :: proc(item: RenderItem) {
         DrawShapeReleaseRef(item.shape)
     case .Text:
         TextReleaseRef(item.text)
+    case .TextBox:
+        TextBoxReleaseRef(item.text_box)
     }
 }
 
@@ -167,6 +173,8 @@ is_item_gone :: proc(item: RenderItem) -> bool {
         return item.shape.is_gone
     case .Text:
         return item.text.is_gone
+    case .TextBox:
+        return item.text_box.is_gone
     }
 
     return true
@@ -185,6 +193,8 @@ item_matches :: proc(item, target: RenderItem) -> bool {
         return item.shape == target.shape
     case .Text:
         return item.text == target.text
+    case .TextBox:
+        return item.text_box == target.text_box
     }
 
     return false
@@ -198,6 +208,8 @@ item_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> (RenderItem, bo
         return RenderItem{kind = .DrawShape, shape = DrawShapeFromLua(L, idx)}, true
     } else if core.LuaIsUserdataType(L, idx, "KaptanTextMT") {
         return RenderItem{kind = .Text, text = TextFromLua(L, idx)}, true
+    } else if core.LuaIsUserdataType(L, idx, "KaptanTextBoxMT") {
+        return RenderItem{kind = .TextBox, text_box = TextBoxFromLua(L, idx)}, true
     }
 
     return {}, false
@@ -224,7 +236,7 @@ _add :: proc "c" (L: ^lua.State) -> i32 {
     layer := LayerFromLua(L, 1)
     item, ok := item_from_lua(L, 2)
     if ! ok {
-        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, or KaptanText expected"))
+        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, KaptanText, or KaptanTextBox expected"))
     }
 
     if layer->contains(item) {
@@ -259,7 +271,7 @@ _remove :: proc "c" (L: ^lua.State) -> i32 {
     layer := LayerFromLua(L, 1)
     target, ok := item_from_lua(L, 2)
     if ! ok {
-        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, or KaptanText expected"))
+        return i32(lua.L_argerror(L, c.int(2), "KaptanSprite, KaptanDraw, KaptanText, or KaptanTextBox expected"))
     }
 
     for item, index in layer.items {

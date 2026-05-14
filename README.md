@@ -1000,6 +1000,29 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * text:setText(text)
 * text:setVisible(visible)
 
+### Text Box
+
+* text_box = KaptanTextBox.new(font_path, text, font_size, width, height)
+* KaptanTextBox.ALIGN_LEFT
+* KaptanTextBox.ALIGN_CENTER
+* KaptanTextBox.ALIGN_RIGHT
+* text_box:getAlignment()
+* text_box:getPiv()
+* text_box:getPos()
+* text_box:getRot()
+* text_box:getScl()
+* text_box:getSize()
+* text_box:isVisible()
+* text_box:setAlignment(alignment)
+* text_box:setColor(r, g, b, a)
+* text_box:setPiv(x, y)
+* text_box:setPos(x, y)
+* text_box:setRot(angle)
+* text_box:setScl(scale)
+* text_box:setSize(width, height)
+* text_box:setText(text)
+* text_box:setVisible(visible)
+
 ### Draw
 
 * shape = KaptanDraw.newPoint(x, y)
