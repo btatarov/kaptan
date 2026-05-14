@@ -911,6 +911,13 @@ List of available functions:
 
 All Kaptan userdata objects support `object:setInterface(interface_table)`. This includes layers, sprites, draw shapes, text, audio channels, animation curves, sprite animations, physics bodies, and physics shapes.
 
+`KaptanEnvironment.setLuaGCLogging(true)` logs future explicit `collectgarbage(...)` calls and approximate Lua finalizer-cycle observations. It is opt-in, available in release builds, and does not report exact internal Lua GC step starts.
+
+### Environment
+
+* KaptanEnvironment.isLuaGCLogging()
+* KaptanEnvironment.setLuaGCLogging(enabled)
+
 ### Window
 
 * KaptanWindow.open(title, width, height)

@@ -36,6 +36,8 @@ main :: proc() {
 
     L := core.InitLuaState()
 
+    core.EnvironmentLuaBind(L)
+
     graphics.WindowLuaBind(L)
     graphics.RendererLuaBind(L)
     graphics.LayerLuaBind(L)
@@ -93,7 +95,10 @@ main :: proc() {
     }
 
     // registered last so Lua __gc runs before subsystem resources are torn down
-    defer core.DestroyLuaState(L)
+    defer {
+        core.EnvironmentLuaUnbind(L)
+        core.DestroyLuaState(L)
+    }
 
     if len(os.args) > 1 {
         log.debug("Running lua with argument:", os.args[1])
