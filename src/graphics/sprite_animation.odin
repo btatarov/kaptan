@@ -12,9 +12,10 @@ SpriteAnimationFrame :: struct {
 }
 
 SpriteAnimation :: struct {
-    sprite:   ^Sprite,
-    frames:   [dynamic]SpriteAnimationFrame,
-    playback: AnimationPlayback,
+    sprite:          ^Sprite,
+    frames:          [dynamic]SpriteAnimationFrame,
+    playback:        AnimationPlayback,
+    cur_frame_index: i32,
 }
 
 SpriteAnimationLuaBind :: proc(L: ^lua.State) {
@@ -62,6 +63,7 @@ init_sprite_animation :: proc(animation: ^SpriteAnimation, sprite: ^Sprite) {
     animation.sprite = sprite
     animation.frames = make([dynamic]SpriteAnimationFrame)
     AnimationPlaybackInit(&animation.playback)
+    animation.cur_frame_index = -1
     SpriteAddRef(sprite)
 }
 
@@ -113,7 +115,12 @@ sprite_animation_apply_frame :: proc "contextless" (animation: ^SpriteAnimation,
         return
     }
 
+    if animation.cur_frame_index == i32(index) {
+        return
+    }
+
     SpriteSetFrame(animation.sprite, animation.frames[index].frame)
+    animation.cur_frame_index = i32(index)
 }
 
 @(private="file")
@@ -181,6 +188,7 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
     clear(&animation.frames)
     AnimationPlaybackStop(&animation.playback)
     AnimationPlaybackSetDuration(&animation.playback, 0)
+    animation.cur_frame_index = -1
 
     return 0
 }
