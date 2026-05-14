@@ -5,11 +5,11 @@ import "core:log"
 import lua "vendor:lua/5.4"
 
 EnvironmentState :: struct {
-    gc_logging:                 bool,
-    fps_counter_enabled:        bool,
-    sentinel_enabled:           bool,
-    destroying:                 bool,
-    original_collectgarbage_ref: i32,
+    gc_logging:          bool,
+    fps_counter_enabled: bool,
+    sentinel_enabled:    bool,
+    destroying:          bool,
+    collectgarbage_ref:  i32,
 }
 
 @(private="file") environment: EnvironmentState
@@ -17,22 +17,22 @@ EnvironmentState :: struct {
 
 EnvironmentLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
-        { "isDebugBuild",    _is_debug_build },
+        { "isDebugBuild",         _is_debug_build },
         { "isFPSCounterEnabled",  _is_fps_counter_enabled },
-        { "isLuaGCLogging",  _is_lua_gc_logging },
+        { "isLuaGCLogging",       _is_lua_gc_logging },
         { "setFPSCounterEnabled", _set_fps_counter_enabled },
-        { "setLuaGCLogging", _set_lua_gc_logging },
+        { "setLuaGCLogging",      _set_lua_gc_logging },
         { nil, nil },
     }
 
-    environment.gc_logging = false
+    environment.gc_logging          = false
     environment.fps_counter_enabled = false
-    environment.sentinel_enabled = false
-    environment.destroying = false
-    environment.original_collectgarbage_ref = lua.REFNIL
+    environment.sentinel_enabled    = false
+    environment.destroying          = false
+    environment.collectgarbage_ref  = lua.REFNIL
 
     lua.getglobal(L, "collectgarbage")
-    environment.original_collectgarbage_ref = lua.L_ref(L, lua.REGISTRYINDEX)
+    environment.collectgarbage_ref = lua.L_ref(L, lua.REGISTRYINDEX)
     lua.pushcfunction(L, lua.CFunction(environment_collectgarbage))
     lua.setglobal(L, "collectgarbage")
 
@@ -45,15 +45,15 @@ EnvironmentLuaBind :: proc(L: ^lua.State) {
 }
 
 EnvironmentLuaUnbind :: proc(L: ^lua.State) {
-    environment.destroying = true
-    environment.gc_logging = false
+    environment.destroying       = true
+    environment.gc_logging       = false
     environment.sentinel_enabled = false
 
-    if environment.original_collectgarbage_ref != lua.REFNIL {
-        lua.rawgeti(L, lua.REGISTRYINDEX, lua.Integer(environment.original_collectgarbage_ref))
+    if environment.collectgarbage_ref != lua.REFNIL {
+        lua.rawgeti(L, lua.REGISTRYINDEX, lua.Integer(environment.collectgarbage_ref))
         lua.setglobal(L, "collectgarbage")
-        lua.L_unref(L, lua.REGISTRYINDEX, environment.original_collectgarbage_ref)
-        environment.original_collectgarbage_ref = lua.REFNIL
+        lua.L_unref(L, lua.REGISTRYINDEX, environment.collectgarbage_ref)
+        environment.collectgarbage_ref = lua.REFNIL
     }
 }
 
@@ -79,11 +79,11 @@ environment_collectgarbage :: proc "c" (L: ^lua.State) -> i32 {
         log.debugf("KaptanEnvironment: Lua GC requested: %s", option)
     }
 
-    if environment.original_collectgarbage_ref == lua.REFNIL {
+    if environment.collectgarbage_ref == lua.REFNIL {
         return i32(lua.L_error(L, "original collectgarbage function is not available"))
     }
 
-    lua.rawgeti(L, lua.REGISTRYINDEX, lua.Integer(environment.original_collectgarbage_ref))
+    lua.rawgeti(L, lua.REGISTRYINDEX, lua.Integer(environment.collectgarbage_ref))
     lua.insert(L, 1)
 
     status := lua.pcall(L, arg_count, lua.MULTRET, 0)
@@ -123,18 +123,21 @@ _is_debug_build :: proc "c" (L: ^lua.State) -> i32 {
 @(private="file")
 _is_fps_counter_enabled :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(environment.fps_counter_enabled))
+
     return 1
 }
 
 @(private="file")
 _is_lua_gc_logging :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(environment.gc_logging))
+
     return 1
 }
 
 @(private="file")
 _set_fps_counter_enabled :: proc "c" (L: ^lua.State) -> i32 {
     environment.fps_counter_enabled = bool(lua.toboolean(L, 1))
+
     return 0
 }
 
