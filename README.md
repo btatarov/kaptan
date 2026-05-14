@@ -186,13 +186,24 @@ sprite:setScl(2, 1) -- twice as wide, same height
 shape:setScl(1, 2) -- same width, twice as tall
 ```
 
-Text scaling is currently uniform:
+Text and text-box scaling is currently uniform:
 
 ```lua
 label:setScl(2) -- text appears 2x larger
+box:setScl(2)   -- text box content appears 2x larger
 ```
 
-Text rendering uses Raylib `DrawTextPro`, which supports uniform scale through font size and spacing. Non-uniform text scale would require rendering text to a texture and drawing it with `DrawTexturePro` later.
+Text rendering uses Raylib `DrawTextPro`, which supports uniform scale through font size and spacing. Kaptan applies bilinear filtering to loaded font atlases so rotated or scaled glyphs have smoother edges than point-filtered text.
+
+For large text, prefer loading the font at the intended size instead of scaling small text up heavily:
+
+```lua
+title = KaptanText.new('tests/text/unitblock.ttf', 'Title', 72) -- preferred
+small = KaptanText.new('tests/text/unitblock.ttf', 'Title', 24)
+small:setScl(3) -- works, but can look softer or blockier
+```
+
+Very large scale factors can still reveal the source font-atlas resolution, and rotated text can still show some sampling artifacts. Non-uniform text scale would require rendering text to a texture and drawing it with `DrawTexturePro` later.
 
 ### Rotation
 

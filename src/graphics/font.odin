@@ -26,10 +26,13 @@ FontInit :: proc(path: cstring, font_size: i32) -> ^FontResource {
     log.debugf("Load font: %s", identifier)
 
     font := rl.LoadFontEx(path, font_size, nil, 0)
+    rl.SetTextureFilter(font.texture, .BILINEAR)
+
     resource_identifier := strings.clone(identifier)
     resource := new(FontResource)
     resource^ = FontResource{font = font, identifier = resource_identifier, ref_count = 1}
     font_cache[resource_identifier] = resource
+
     return resource
 }
 
