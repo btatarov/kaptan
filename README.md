@@ -916,7 +916,9 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 ### Environment
 
 * KaptanEnvironment.isDebugBuild()
+* KaptanEnvironment.isFPSCounterEnabled()
 * KaptanEnvironment.isLuaGCLogging()
+* KaptanEnvironment.setFPSCounterEnabled(enabled)
 * KaptanEnvironment.setLuaGCLogging(enabled)
 
 ### Window

@@ -102,8 +102,7 @@ RendererDraw :: proc() {
         }
     }
 
-    // FPS counter
-    when ODIN_DEBUG {
+    if core.EnvironmentIsFPSCounterEnabled() {
         fps_text := fmt.ctprintf("FPS: %v", rl.GetFPS())
         text_size := rl.MeasureTextEx(rl.GetFontDefault(), fps_text, 20, 1)
         rl.DrawText(fps_text, rl.GetScreenWidth() - i32(text_size.x) - 20, 10, 20, rl.WHITE)

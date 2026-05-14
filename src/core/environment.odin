@@ -6,6 +6,7 @@ import lua "vendor:lua/5.4"
 
 EnvironmentState :: struct {
     gc_logging:                 bool,
+    fps_counter_enabled:        bool,
     sentinel_enabled:           bool,
     destroying:                 bool,
     original_collectgarbage_ref: i32,
@@ -17,12 +18,15 @@ EnvironmentState :: struct {
 EnvironmentLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
         { "isDebugBuild",    _is_debug_build },
+        { "isFPSCounterEnabled",  _is_fps_counter_enabled },
         { "isLuaGCLogging",  _is_lua_gc_logging },
+        { "setFPSCounterEnabled", _set_fps_counter_enabled },
         { "setLuaGCLogging", _set_lua_gc_logging },
         { nil, nil },
     }
 
     environment.gc_logging = false
+    environment.fps_counter_enabled = false
     environment.sentinel_enabled = false
     environment.destroying = false
     environment.original_collectgarbage_ref = lua.REFNIL
@@ -51,6 +55,10 @@ EnvironmentLuaUnbind :: proc(L: ^lua.State) {
         lua.L_unref(L, lua.REGISTRYINDEX, environment.original_collectgarbage_ref)
         environment.original_collectgarbage_ref = lua.REFNIL
     }
+}
+
+EnvironmentIsFPSCounterEnabled :: proc "contextless" () -> bool {
+    return environment.fps_counter_enabled
 }
 
 @(private="file")
@@ -113,9 +121,21 @@ _is_debug_build :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_is_fps_counter_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    lua.pushboolean(L, b32(environment.fps_counter_enabled))
+    return 1
+}
+
+@(private="file")
 _is_lua_gc_logging :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(environment.gc_logging))
     return 1
+}
+
+@(private="file")
+_set_fps_counter_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    environment.fps_counter_enabled = bool(lua.toboolean(L, 1))
+    return 0
 }
 
 @(private="file")
