@@ -537,6 +537,8 @@ KaptanRenderer.clear()
 
 Do not rely on exact Lua GC timing for gameplay rules. Lua GC may run later than the line where you set a variable to `nil`. If something must disappear immediately from a layer, use `layer:remove(object)`, `layer:clear()` for that whole layer, or keep the object invisible with `setVisible(false)`.
 
+Use `KaptanEnvironment.setLuaGCLogging(true)` when diagnosing Lua ownership or collection behavior. It logs future explicit `collectgarbage(...)` calls and approximate Lua finalizer-cycle observations. It is opt-in, emits info-level logs so it is visible with the default release logger, and does not report exact internal Lua GC step starts.
+
 Avoid creating and discarding large numbers of objects every frame. For high-frequency effects such as damage numbers, prefer pooling reusable text objects:
 
 ```lua
@@ -921,8 +923,6 @@ Use `KaptanMouse.getPos()` when interacting with GUI or HUD objects.
 List of available functions:
 
 All Kaptan userdata objects support `object:setInterface(interface_table)`. This includes layers, sprites, draw shapes, text, audio channels, animation curves, sprite animations, physics bodies, and physics shapes.
-
-`KaptanEnvironment.setLuaGCLogging(true)` logs future explicit `collectgarbage(...)` calls and approximate Lua finalizer-cycle observations. It is opt-in, available in release builds, and does not report exact internal Lua GC step starts.
 
 ### Environment
 

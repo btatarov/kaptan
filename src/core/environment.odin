@@ -76,7 +76,7 @@ environment_collectgarbage :: proc "c" (L: ^lua.State) -> i32 {
 
     if environment.gc_logging {
         option := lua.L_optstring(L, 1, "collect")
-        log.debugf("KaptanEnvironment: Lua GC requested: %s", option)
+        log.infof("KaptanEnvironment: Lua GC requested: %s", option)
     }
 
     if environment.collectgarbage_ref == lua.REFNIL {
@@ -99,7 +99,7 @@ environment_gc_sentinel :: proc "c" (L: ^lua.State) -> i32 {
     context = GetDefaultContext()
 
     if environment.gc_logging {
-        log.debugf("KaptanEnvironment: Lua GC finalizer cycle observed")
+        log.infof("KaptanEnvironment: Lua GC finalizer cycle observed")
     }
 
     if environment.sentinel_enabled && ! environment.destroying {
