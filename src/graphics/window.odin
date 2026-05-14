@@ -68,10 +68,27 @@ WindowMainLoop :: proc() {
     log.debugf("KaptanWindow: MainLoop")
 
     for ! window.close && ! rl.WindowShouldClose() {
+        profile_enabled := core.FrameProfilerIsEnabled()
+        profile_frame_start: core.FrameProfilerTick
+        if profile_enabled {
+            profile_frame_start = core.FrameProfilerBeginFrame()
+        }
+
         // physics
+        profile_physics_start: core.FrameProfilerTick
+        if profile_enabled {
+            profile_physics_start = core.FrameProfilerNow()
+        }
         physics.PhysicsSystemUpdate(rl.GetFrameTime())
+        if profile_enabled {
+            core.FrameProfilerAddPhysics(profile_physics_start)
+        }
 
         // logic
+        profile_lua_start: core.FrameProfilerTick
+        if profile_enabled {
+            profile_lua_start = core.FrameProfilerNow()
+        }
         if loop_callback_ref != lua.REFNIL {
             L := core.GetLuaState()
 
@@ -83,9 +100,19 @@ WindowMainLoop :: proc() {
                 _clearLoopCallback(L)
             }
         }
+        if profile_enabled {
+            core.FrameProfilerAddLua(profile_lua_start)
+        }
 
         // audio
+        profile_audio_start: core.FrameProfilerTick
+        if profile_enabled {
+            profile_audio_start = core.FrameProfilerNow()
+        }
         audio.AudioSystemUpdate()
+        if profile_enabled {
+            core.FrameProfilerAddAudio(profile_audio_start)
+        }
 
         // rendering
         RendererDraw()
@@ -93,7 +120,15 @@ WindowMainLoop :: proc() {
         window.frames += 1
         window.time += f64(rl.GetFrameTime())
 
+        profile_temp_free_start: core.FrameProfilerTick
+        if profile_enabled {
+            profile_temp_free_start = core.FrameProfilerNow()
+        }
         free_all(context.temp_allocator)
+        if profile_enabled {
+            core.FrameProfilerAddTempFree(profile_temp_free_start)
+            core.FrameProfilerEndFrame(profile_frame_start)
+        }
     }
 }
 

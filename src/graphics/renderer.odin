@@ -40,6 +40,12 @@ DestroyRenderer :: proc() {
 }
 
 RendererDraw :: proc() {
+    profile_enabled := core.FrameProfilerIsEnabled()
+    profile_render_start: core.FrameProfilerTick
+    if profile_enabled {
+        profile_render_start = core.FrameProfilerNow()
+    }
+
     remove_gone_layers()
 
     rl.BeginDrawing()
@@ -79,14 +85,46 @@ RendererDraw :: proc() {
         layer->remove_gone()
 
         for item in layer.items {
+            if profile_enabled {
+                core.FrameProfilerCountLayerItemVisited()
+            }
+
             switch item.kind {
             case .Sprite:
+                if profile_enabled {
+                    if item.sprite.is_gone || ! item.sprite.visible {
+                        core.FrameProfilerCountSpriteSkipped()
+                    } else {
+                        core.FrameProfilerCountSpriteDrawn()
+                    }
+                }
                 item.sprite->draw()
             case .DrawShape:
+                if profile_enabled {
+                    if item.shape.is_gone || ! item.shape.visible {
+                        core.FrameProfilerCountDrawShapeSkipped()
+                    } else {
+                        core.FrameProfilerCountDrawShapeDrawn()
+                    }
+                }
                 item.shape->draw()
             case .Text:
+                if profile_enabled {
+                    if item.text.is_gone || ! item.text.visible {
+                        core.FrameProfilerCountTextSkipped()
+                    } else {
+                        core.FrameProfilerCountTextDrawn()
+                    }
+                }
                 item.text->draw()
             case .TextBox:
+                if profile_enabled {
+                    if item.text_box.is_gone || ! item.text_box.visible {
+                        core.FrameProfilerCountTextBoxSkipped()
+                    } else {
+                        core.FrameProfilerCountTextBoxDrawn()
+                    }
+                }
                 item.text_box->draw()
             }
         }
@@ -110,7 +148,14 @@ RendererDraw :: proc() {
         rl.DrawText(fps_text, rl.GetScreenWidth() - i32(text_size.x) - 20, 10, 20, rl.WHITE)
     }
 
-    rl.EndDrawing()
+    if profile_enabled {
+        core.FrameProfilerAddRender(profile_render_start)
+        profile_end_drawing_start := core.FrameProfilerNow()
+        rl.EndDrawing()
+        core.FrameProfilerAddEndDrawing(profile_end_drawing_start)
+    } else {
+        rl.EndDrawing()
+    }
 }
 
 RendererClearLayers :: proc() {

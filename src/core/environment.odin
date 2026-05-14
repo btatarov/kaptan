@@ -17,9 +17,13 @@ EnvironmentState :: struct {
 
 EnvironmentLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
+        { "getFrameProfile",     _get_frame_profile },
         { "isDebugBuild",         _is_debug_build },
+        { "isFrameProfiling",     _is_frame_profiling },
         { "isFPSCounterEnabled",  _is_fps_counter_enabled },
         { "isLuaGCLogging",       _is_lua_gc_logging },
+        { "resetFrameProfile",   _reset_frame_profile },
+        { "setFrameProfiling",   _set_frame_profiling },
         { "setFPSCounterEnabled", _set_fps_counter_enabled },
         { "setLuaGCLogging",      _set_lua_gc_logging },
         { nil, nil },
@@ -110,12 +114,108 @@ environment_gc_sentinel :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+push_bucket_table :: proc "contextless" (L: ^lua.State, bucket: FrameProfileBucketSnapshot) {
+    lua.createtable(L, 0, 5)
+
+    lua.pushnumber(L, lua.Number(bucket.last_ms))
+    lua.setfield(L, -2, "lastMs")
+
+    lua.pushnumber(L, lua.Number(bucket.avg_ms))
+    lua.setfield(L, -2, "avgMs")
+
+    lua.pushnumber(L, lua.Number(bucket.max_ms))
+    lua.setfield(L, -2, "maxMs")
+
+    lua.pushnumber(L, lua.Number(bucket.p95_ms))
+    lua.setfield(L, -2, "p95Ms")
+
+    lua.pushnumber(L, lua.Number(bucket.p99_ms))
+    lua.setfield(L, -2, "p99Ms")
+}
+
+@(private="file")
+push_render_counters_table :: proc "contextless" (L: ^lua.State, counters: FrameProfilerRenderCounters) {
+    lua.createtable(L, 0, 9)
+
+    lua.pushinteger(L, lua.Integer(counters.layer_items_visited))
+    lua.setfield(L, -2, "layerItemsVisited")
+
+    lua.pushinteger(L, lua.Integer(counters.sprites_drawn))
+    lua.setfield(L, -2, "spritesDrawn")
+
+    lua.pushinteger(L, lua.Integer(counters.sprites_skipped))
+    lua.setfield(L, -2, "spritesSkipped")
+
+    lua.pushinteger(L, lua.Integer(counters.draw_shapes_drawn))
+    lua.setfield(L, -2, "drawShapesDrawn")
+
+    lua.pushinteger(L, lua.Integer(counters.draw_shapes_skipped))
+    lua.setfield(L, -2, "drawShapesSkipped")
+
+    lua.pushinteger(L, lua.Integer(counters.texts_drawn))
+    lua.setfield(L, -2, "textsDrawn")
+
+    lua.pushinteger(L, lua.Integer(counters.texts_skipped))
+    lua.setfield(L, -2, "textsSkipped")
+
+    lua.pushinteger(L, lua.Integer(counters.text_boxes_drawn))
+    lua.setfield(L, -2, "textBoxesDrawn")
+
+    lua.pushinteger(L, lua.Integer(counters.text_boxes_skipped))
+    lua.setfield(L, -2, "textBoxesSkipped")
+}
+
+@(private="file")
+set_bucket_field :: proc "contextless" (L: ^lua.State, name: cstring, bucket: FrameProfileBucketSnapshot) {
+    push_bucket_table(L, bucket)
+    lua.setfield(L, -2, name)
+}
+
+@(private="file")
 _is_debug_build :: proc "c" (L: ^lua.State) -> i32 {
     when ODIN_DEBUG {
         lua.pushboolean(L, b32(true))
     } else {
         lua.pushboolean(L, b32(false))
     }
+
+    return 1
+}
+
+@(private="file")
+_get_frame_profile :: proc "c" (L: ^lua.State) -> i32 {
+    context = GetDefaultContext()
+
+    snapshot := FrameProfilerSnapshot()
+
+    lua.createtable(L, 0, 13)
+
+    lua.pushboolean(L, b32(snapshot.enabled))
+    lua.setfield(L, -2, "enabled")
+
+    lua.pushinteger(L, lua.Integer(snapshot.frames))
+    lua.setfield(L, -2, "frames")
+
+    set_bucket_field(L, "total", snapshot.total)
+    set_bucket_field(L, "physics", snapshot.physics)
+    set_bucket_field(L, "lua", snapshot.lua)
+    set_bucket_field(L, "audio", snapshot.audio)
+    set_bucket_field(L, "render", snapshot.render)
+    set_bucket_field(L, "endDrawing", snapshot.end_drawing)
+    set_bucket_field(L, "tempFree", snapshot.temp_free)
+
+    push_render_counters_table(L, snapshot.last_render_counters)
+    lua.setfield(L, -2, "lastRender")
+
+    push_render_counters_table(L, snapshot.total_render_counters)
+    lua.setfield(L, -2, "totalRender")
+
+    return 1
+}
+
+@(private="file")
+_is_frame_profiling :: proc "c" (L: ^lua.State) -> i32 {
+    lua.pushboolean(L, b32(FrameProfilerIsEnabled()))
 
     return 1
 }
@@ -132,6 +232,20 @@ _is_lua_gc_logging :: proc "c" (L: ^lua.State) -> i32 {
     lua.pushboolean(L, b32(environment.gc_logging))
 
     return 1
+}
+
+@(private="file")
+_reset_frame_profile :: proc "c" (L: ^lua.State) -> i32 {
+    FrameProfilerReset()
+
+    return 0
+}
+
+@(private="file")
+_set_frame_profiling :: proc "c" (L: ^lua.State) -> i32 {
+    FrameProfilerSetEnabled(bool(lua.toboolean(L, 1)))
+
+    return 0
 }
 
 @(private="file")

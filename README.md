@@ -539,6 +539,20 @@ Do not rely on exact Lua GC timing for gameplay rules. Lua GC may run later than
 
 Use `KaptanEnvironment.setLuaGCLogging(true)` when diagnosing Lua ownership or collection behavior. It logs future explicit `collectgarbage(...)` calls and approximate Lua finalizer-cycle observations. It is opt-in, emits info-level logs so it is visible with the default release logger, and does not report exact internal Lua GC step starts.
 
+Use `KaptanEnvironment.setFrameProfiling(true)` when tracking frame cost during development. `KaptanEnvironment.getFrameProfile()` returns timing buckets in milliseconds for total frame time, physics, Lua callback, audio, rendering, Raylib `EndDrawing`, and temp allocator cleanup, plus render counters for the last frame and accumulated totals. Each timing bucket has `lastMs`, `avgMs`, `maxMs`, `p95Ms`, and `p99Ms`; percentiles use a rolling 2048-sample window, while averages and maximums are since the last reset. The profiler is disabled by default and works in debug and release builds.
+
+```lua
+KaptanEnvironment.setFrameProfiling(true)
+
+function loop()
+    local p = KaptanEnvironment.getFrameProfile()
+    if p.frames % 120 == 0 then
+        print('total avg ms', p.total.avgMs, 'lua avg ms', p.lua.avgMs, 'render avg ms', p.render.avgMs)
+        print('sprites drawn', p.lastRender.spritesDrawn, 'items visited', p.lastRender.layerItemsVisited)
+    end
+end
+```
+
 Avoid creating and discarding large numbers of objects every frame. For high-frequency effects such as damage numbers, prefer pooling reusable text objects:
 
 ```lua
@@ -926,9 +940,13 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 
 ### Environment
 
+* KaptanEnvironment.getFrameProfile()
 * KaptanEnvironment.isDebugBuild()
+* KaptanEnvironment.isFrameProfiling()
 * KaptanEnvironment.isFPSCounterEnabled()
 * KaptanEnvironment.isLuaGCLogging()
+* KaptanEnvironment.resetFrameProfile()
+* KaptanEnvironment.setFrameProfiling(enabled)
 * KaptanEnvironment.setFPSCounterEnabled(enabled)
 * KaptanEnvironment.setLuaGCLogging(enabled)
 
