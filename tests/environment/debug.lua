@@ -1,3 +1,5 @@
+print('debug build', KaptanEnvironment.isDebugBuild())
+print('debug build type', type(KaptanEnvironment.isDebugBuild()))
 print('gc logging before', KaptanEnvironment.isLuaGCLogging())
 KaptanEnvironment.setLuaGCLogging(true)
 print('gc logging after enable', KaptanEnvironment.isLuaGCLogging())

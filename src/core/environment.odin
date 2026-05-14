@@ -16,6 +16,7 @@ EnvironmentState :: struct {
 
 EnvironmentLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
+        { "isDebugBuild",    _is_debug_build },
         { "isLuaGCLogging",  _is_lua_gc_logging },
         { "setLuaGCLogging", _set_lua_gc_logging },
         { nil, nil },
@@ -98,6 +99,17 @@ environment_gc_sentinel :: proc "c" (L: ^lua.State) -> i32 {
     }
 
     return 0
+}
+
+@(private="file")
+_is_debug_build :: proc "c" (L: ^lua.State) -> i32 {
+    when ODIN_DEBUG {
+        lua.pushboolean(L, b32(true))
+    } else {
+        lua.pushboolean(L, b32(false))
+    }
+
+    return 1
 }
 
 @(private="file")

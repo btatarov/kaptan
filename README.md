@@ -915,6 +915,7 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 
 ### Environment
 
+* KaptanEnvironment.isDebugBuild()
 * KaptanEnvironment.isLuaGCLogging()
 * KaptanEnvironment.setLuaGCLogging(enabled)
 
