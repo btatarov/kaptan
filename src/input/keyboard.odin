@@ -1,6 +1,8 @@
 package input
 
+import "core:c"
 import "core:fmt"
+import "core:strings"
 
 import lua "vendor:lua/jit"
 import rl "vendor:raylib"
@@ -9,11 +11,12 @@ import core "../core"
 
 KeyboardLuaBind :: proc(L: ^lua.State) {
     @static reg_table: []lua.L_Reg = {
-        { "getKeysDown", _get_keys_down },
-        { "isDown",      _is_down },
-        { "isPressed",   _is_pressed },
-        { "isReleased",  _is_released },
-        { "isUp",        _is_up },
+        { "getKeysDown",  _get_keys_down },
+        { "getTextInput", _get_text_input },
+        { "isDown",       _is_down },
+        { "isPressed",    _is_pressed },
+        { "isReleased",   _is_released },
+        { "isUp",         _is_up },
         { nil, nil },
     }
 
@@ -49,6 +52,27 @@ _get_keys_down :: proc "c" (L: ^lua.State) -> i32 {
             idx += 1
         }
     }
+
+    return 1
+}
+
+@(private="file")
+_get_text_input :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
+    builder := strings.builder_make(allocator = context.temp_allocator)
+
+    for {
+        codepoint := rl.GetCharPressed()
+        if codepoint == 0 {
+            break
+        }
+
+        _, _ = strings.write_rune(&builder, codepoint)
+    }
+
+    text := strings.to_string(builder)
+    lua.pushlstring(L, cstring(raw_data(text)), c.size_t(len(text)))
 
     return 1
 }

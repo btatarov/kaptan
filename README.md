@@ -856,6 +856,8 @@ Keyboard constants are exposed as `KaptanKeyboard.KEY_*`.
 
 `KaptanKeyboard.getKeysDown()` returns an array of currently held key codes.
 
+`KaptanKeyboard.getTextInput()` returns the complete UTF-8 text typed since the last text-input poll. It consumes Raylib's queued text input, so call it once per frame. Use key APIs such as `KaptanKeyboard.isPressed(KaptanKeyboard.KEY_BACKSPACE)` for editing keys that are not text characters.
+
 ```lua
 KaptanWindow.setLoopCallback(function()
     if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_SPACE) then
@@ -864,6 +866,18 @@ KaptanWindow.setLoopCallback(function()
 
     if KaptanKeyboard.isDown(KaptanKeyboard.KEY_Q) then
         KaptanWindow.quit()
+    end
+end)
+```
+
+```lua
+local text = ''
+
+KaptanWindow.setLoopCallback(function()
+    text = text .. KaptanKeyboard.getTextInput()
+
+    if KaptanKeyboard.isPressed(KaptanKeyboard.KEY_BACKSPACE) then
+        text = text:sub(1, -2)
     end
 end)
 ```
@@ -1290,6 +1304,7 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 ### Keyboard
 
 * KaptanKeyboard.getKeysDown()
+* KaptanKeyboard.getTextInput()
 * KaptanKeyboard.isDown(key)
 * KaptanKeyboard.isPressed(key)
 * KaptanKeyboard.isReleased(key)
