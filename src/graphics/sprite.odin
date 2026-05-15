@@ -3,7 +3,7 @@ package graphics
 import "core:c"
 import "core:log"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import "../core"
@@ -186,7 +186,7 @@ read_frame_integer_field :: proc "contextless" (L: ^lua.State, frame_idx: i32, t
 
 SpriteFrameFromLua :: proc "contextless" (L: ^lua.State, idx: i32) -> SpriteFrame {
     if ! lua.istable(L, idx) {
-        lua.L_typeerror(L, c.int(idx), "table")
+        lua.L_error(L, "bad argument #%d (table expected)", idx)
     }
 
     frame_idx := core.LuaGetAbsIndex(L, idx)

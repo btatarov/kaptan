@@ -2,7 +2,7 @@ package graphics
 
 import "core:c"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 
 import "../core"
 

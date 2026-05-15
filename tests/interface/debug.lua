@@ -37,3 +37,27 @@ end
 
 curve:setInterface(override_interface)
 print('lua method overrides native', curve:getKeyCount())
+
+local first_interface = {}
+first_interface.__index = first_interface
+
+function first_interface:firstMethod()
+    return 'first'
+end
+
+local second_interface = {}
+second_interface.__index = second_interface
+
+function second_interface:secondMethod()
+    return 'second'
+end
+
+local first = KaptanAnimationCurve.new()
+first:setInterface(first_interface)
+print('first interface before second', first:firstMethod())
+
+local second = KaptanAnimationCurve.new()
+second:setInterface(second_interface)
+print('first interface after second', first:firstMethod())
+print('second interface method', second:secondMethod())
+print('interfaces isolated', first.secondMethod == nil, second.firstMethod == nil)

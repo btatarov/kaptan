@@ -2,7 +2,7 @@ package input
 
 import "core:fmt"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import core "../core"
@@ -36,7 +36,7 @@ KeyboardLuaUnbind :: proc(L: ^lua.State) {
 _get_keys_down :: proc "c" (L: ^lua.State) -> i32 {
     lua.createtable(L, 16, 0)
 
-    idx := 1
+    idx: i32 = 1
 
     for key in rl.KeyboardKey {
         if key == .KEY_NULL {
@@ -45,7 +45,7 @@ _get_keys_down :: proc "c" (L: ^lua.State) -> i32 {
 
         if rl.IsKeyDown(key) {
             lua.pushinteger(L, lua.Integer(key))
-            lua.rawseti(L, -2, lua.Integer(idx))
+            lua.rawseti(L, -2, idx)
             idx += 1
         }
     }

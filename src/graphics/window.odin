@@ -2,7 +2,7 @@ package graphics
 
 import "core:log"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import "../audio"
@@ -196,7 +196,8 @@ _setLoopCallback :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
     if ! lua.isfunction(L, 1) {
-        return i32(lua.L_typeerror(L, 1, "function"))
+        lua.L_error(L, "bad argument #1 (function expected)")
+        return 0
     }
 
     _clearLoopCallback(L)

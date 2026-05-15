@@ -3,7 +3,7 @@ package input
 import "core:c"
 import "core:fmt"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import core "../core"

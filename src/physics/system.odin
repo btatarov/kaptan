@@ -5,7 +5,7 @@ import "core:log"
 import "core:math"
 
 import b2 "vendor:box2d"
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import "../core"
@@ -447,7 +447,7 @@ query_filter_from_lua :: proc "contextless" (L: ^lua.State, idx: i32) -> b2.Quer
     }
 
     if ! lua.istable(L, idx) {
-        lua.L_typeerror(L, idx, "table")
+        lua.L_error(L, "bad argument #%d (table expected)", idx)
     }
 
     abs_idx := core.LuaGetAbsIndex(L, idx)
@@ -472,7 +472,7 @@ push_shape_refs_array :: proc(L: ^lua.State, shapes: []^PhysicsShape) {
     lua.createtable(L, c.int(len(shapes)), 0)
     for shape, index in shapes {
         PhysicsShapePushLuaRef(L, shape)
-        lua.rawseti(L, -2, lua.Integer(index + 1))
+        lua.rawseti(L, -2, i32(index + 1))
     }
 }
 
@@ -668,7 +668,7 @@ _get_contact_events :: proc "c" (L: ^lua.State) -> i32 {
         case .Hit:
             push_accumulated_contact_hit_event(L, event)
         }
-        lua.rawseti(L, -2, lua.Integer(out_idx))
+        lua.rawseti(L, -2, out_idx)
         out_idx += 1
     }
     clear_contact_events()
@@ -692,7 +692,7 @@ _get_sensor_events :: proc "c" (L: ^lua.State) -> i32 {
         case .End:
             push_accumulated_sensor_event(L, "end", event.sensor, event.visitor)
         }
-        lua.rawseti(L, -2, lua.Integer(out_idx))
+        lua.rawseti(L, -2, out_idx)
         out_idx += 1
     }
     clear_sensor_events()

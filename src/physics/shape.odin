@@ -3,7 +3,7 @@ package physics
 import "core:log"
 import "core:strings"
 import b2 "vendor:box2d"
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 
 import "../core"
 
@@ -163,7 +163,7 @@ PhysicsShapeDefaultDef :: proc "contextless" (L: ^lua.State, options_idx: i32) -
     }
 
     if ! lua.istable(L, options_idx) {
-        lua.L_typeerror(L, options_idx, "table")
+        lua.L_error(L, "bad argument #%d (table expected)", options_idx)
     }
 
     abs_idx := core.LuaGetAbsIndex(L, options_idx)

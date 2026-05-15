@@ -3,7 +3,7 @@ package graphics
 import "core:fmt"
 import "core:log"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import "../core"

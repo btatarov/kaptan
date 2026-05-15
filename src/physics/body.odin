@@ -6,7 +6,7 @@ import "core:math"
 import "core:strings"
 
 import b2 "vendor:box2d"
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 
 import "../core"
 
@@ -366,10 +366,10 @@ _add_polygon :: proc "c" (L: ^lua.State) -> i32 {
     check_body_valid(L, body)
 
     if ! lua.istable(L, 2) {
-        lua.L_typeerror(L, 2, "table")
+        lua.L_error(L, "bad argument #2 (table expected)")
     }
 
-    point_count := i32(lua.rawlen(L, 2))
+    point_count := i32(lua.objlen(L, 2))
     if point_count < 6 || point_count % 2 != 0 {
         return i32(lua.L_argerror(L, 2, "polygon points must contain at least 3 x/y pairs"))
     }

@@ -2,7 +2,7 @@ package core
 
 import "core:log"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 
 EnvironmentState :: struct {
     gc_logging:          bool,
@@ -68,7 +68,8 @@ EnvironmentIsFPSCounterEnabled :: proc "contextless" () -> bool {
 @(private="file")
 environment_arm_gc_sentinel :: proc "contextless" (L: ^lua.State) {
     _ = lua.newuserdata(L, 0)
-    lua.L_setmetatable(L, GC_SENTINEL_METATABLE)
+    lua.L_getmetatable(L, GC_SENTINEL_METATABLE)
+    lua.setmetatable(L, -2)
     lua.pop(L, 1)
 }
 

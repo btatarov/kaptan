@@ -4,7 +4,7 @@ import "core:log"
 import "core:math"
 import "core:math/linalg"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 import rl "vendor:raylib"
 
 import "../core"
@@ -334,7 +334,7 @@ _new_polygon :: proc "c" (L: ^lua.State) -> i32 {
 
     shape := new_shape(L, .Polygon)
 
-    point_count := i32(lua.rawlen(L, 1))
+    point_count := i32(lua.objlen(L, 1))
     for i := i32(1); i < point_count; i += 2 {
         lua.rawgeti(L, 1, lua.Integer(i))
         x := f32(lua.L_checknumber(L, -1))

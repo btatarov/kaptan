@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:log"
 import "core:strings"
 
-import lua "vendor:lua/5.4"
+import lua "vendor:lua/jit"
 
 @private LuaState: ^lua.State
 
@@ -54,7 +54,7 @@ LuaBindClassSimple :: proc(
     destructor: proc "c" (L: ^lua.State) -> i32,
 ) {
     lua.newtable(L)
-    lua.L_setfuncs(L, raw_data(static_reg_table[:]), 0)
+    lua.L_register(L, nil, raw_data(static_reg_table[:]))
 
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
@@ -73,7 +73,7 @@ LuaBindClassWithConstants :: proc(
     destructor: proc "c" (L: ^lua.State) -> i32,
 ) {
     lua.newtable(L)
-    lua.L_setfuncs(L, raw_data(static_reg_table[:]), 0)
+    lua.L_register(L, nil, raw_data(static_reg_table[:]))
 
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
@@ -94,7 +94,7 @@ LuaBindSingletonSimple :: proc(L: ^lua.State, name: cstring, reg_table: ^[]lua.L
     lua.newtable(L)
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
-    lua.L_setfuncs(L, raw_data(reg_table[:]), 0)
+    lua.L_register(L, nil, raw_data(reg_table[:]))
 
     lua.pop(L, 1)
 }
@@ -108,7 +108,7 @@ LuaBindSingletonWithConstants :: proc(
     lua.newtable(L)
     lua.pushvalue(L, lua.gettop(L))
     lua.setglobal(L, name)
-    lua.L_setfuncs(L, raw_data(reg_table[:]), 0)
+    lua.L_register(L, nil, raw_data(reg_table[:]))
 
     for const_name, _ in constants {
         lua.pushinteger(L, lua.Integer(constants[const_name]))
@@ -120,6 +120,10 @@ LuaBindSingletonWithConstants :: proc(
 
 LuaSetClassMetatable :: proc(L: ^lua.State, name: cstring) {
     index := lua.gettop(L)
+
+    lua.newtable(L)
+    lua.setfenv(L, index)
+
     lua.L_getmetatable(L, fmt.ctprintf("%sMT", name))
     assert(lua.istable(L, -1), fmt.tprintf("%sMT is not a table", name))
     lua.setmetatable(L, index)
@@ -207,7 +211,7 @@ lua_setup_class_metatable :: proc(
 
     lua.pushstring(L, KAPTAN_METHODS_FIELD)
     lua.newtable(L)
-    lua.L_setfuncs(L, raw_data(instance_reg_table[:]), 0)
+    lua.L_register(L, nil, raw_data(instance_reg_table[:]))
     lua.pushcfunction(L, lua.CFunction(lua_userdata_set_interface))
     lua.setfield(L, -2, "setInterface")
     lua.settable(L, -3)
@@ -225,7 +229,7 @@ lua_setup_class_metatable :: proc(
 lua_ensure_uservalue_table :: proc "contextless" (L: ^lua.State, idx: i32) -> i32 {
     abs_idx := LuaGetAbsIndex(L, idx)
 
-    lua.getuservalue(L, abs_idx)
+    lua.getfenv(L, abs_idx)
     if lua.istable(L, -1) {
         return lua.gettop(L)
     }
@@ -233,18 +237,20 @@ lua_ensure_uservalue_table :: proc "contextless" (L: ^lua.State, idx: i32) -> i3
 
     lua.newtable(L)
     lua.pushvalue(L, -1)
-    lua.setuservalue(L, abs_idx)
+    lua.setfenv(L, abs_idx)
 
     return lua.gettop(L)
 }
 
 @(private="file")
 lua_userdata_set_interface :: proc "c" (L: ^lua.State) -> i32 {
-    if ! lua.isuserdata(L, 1) {
-        return i32(lua.L_typeerror(L, 1, "userdata"))
+    if !lua.isuserdata(L, 1) {
+        lua.L_error(L, "bad argument #1 (userdata expected)")
+        return 0
     }
     if ! lua.istable(L, 2) {
-        return i32(lua.L_typeerror(L, 2, "table"))
+        lua.L_error(L, "bad argument #2 (table expected)")
+        return 0
     }
 
     member_idx := lua_ensure_uservalue_table(L, 1)
@@ -257,7 +263,7 @@ lua_userdata_set_interface :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 lua_userdata_index :: proc "c" (L: ^lua.State) -> i32 {
-    lua.getuservalue(L, 1)
+    lua.getfenv(L, 1)
     if lua.istable(L, -1) {
         lua.pushvalue(L, 2)
         lua.gettable(L, -2)
@@ -285,7 +291,8 @@ lua_userdata_index :: proc "c" (L: ^lua.State) -> i32 {
 @(private="file")
 lua_userdata_newindex :: proc "c" (L: ^lua.State) -> i32 {
     if ! lua.isuserdata(L, 1) {
-        return i32(lua.L_typeerror(L, 1, "userdata"))
+        lua.L_error(L, "bad argument #1 (userdata expected)")
+        return 0
     }
 
     member_idx := lua_ensure_uservalue_table(L, 1)
