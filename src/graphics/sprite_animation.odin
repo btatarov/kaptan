@@ -175,9 +175,6 @@ _add_frame :: proc "c" (L: ^lua.State) -> i32 {
 
     append(&animation.frames, SpriteAnimationFrame{frame = frame, duration = duration})
     sprite_animation_recalculate_duration(animation)
-    if len(animation.frames) == 1 {
-        sprite_animation_apply_frame(animation, 0)
-    }
 
     return 0
 }
@@ -266,6 +263,8 @@ _pause :: proc "c" (L: ^lua.State) -> i32 {
 _play :: proc "c" (L: ^lua.State) -> i32 {
     animation := SpriteAnimationFromLua(L, 1)
     AnimationPlaybackPlay(&animation.playback)
+    animation.cur_frame_index = -1
+    sprite_animation_apply_time(animation)
 
     return 0
 }
