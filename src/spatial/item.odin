@@ -27,6 +27,7 @@ SpatialItem :: struct {
     refs:     int,
     is_gone:  bool,
     enabled:  bool,
+    item_index: int,
     query_index: int,
 }
 
@@ -40,7 +41,6 @@ SpatialItemLuaBind :: proc(L: ^lua.State) {
         { "getTag",     _get_tag },
         { "isEnabled",  _is_enabled },
         { "isValid",    _is_valid },
-        { "remove",     _remove },
         { "setCircle",  _set_circle },
         { "setEnabled", _set_enabled },
         { "setEllipse", _set_ellipse },
@@ -144,13 +144,7 @@ SpatialItemRemove :: proc(item: ^SpatialItem) -> bool {
     clear_item_tag(item)
 
     if space != nil && ! space.is_gone {
-        for existing, index in space.items {
-            if existing == item {
-                ordered_remove(&space.items, index)
-                SpatialItemReleaseRef(item)
-                break
-            }
-        }
+        SpatialSpaceRemoveItem(space, item)
     }
 
     return true
@@ -162,6 +156,7 @@ SpatialItemInvalidateFromSpace :: proc(item: ^SpatialItem) {
     }
 
     item.is_gone = true
+    item.item_index = -1
     item.query_index = -1
     item.space = nil
     clear_item_tag(item)
@@ -183,6 +178,7 @@ init_spatial_item :: proc(item: ^SpatialItem, space: ^SpatialSpace, kind: Spatia
     item.refs = 0
     item.is_gone = false
     item.enabled = true
+    item.item_index = -1
     item.query_index = -1
 }
 
@@ -242,17 +238,6 @@ _is_enabled :: proc "c" (L: ^lua.State) -> i32 {
     return 1
 }
 
-@(private="file")
-_remove :: proc "c" (L: ^lua.State) -> i32 {
-    context = core.GetDefaultContext()
-
-    item := SpatialItemFromLua(L, 1)
-    lua.pushboolean(L, b32(SpatialItemRemove(item)))
-
-    return 1
-}
-
-@(private="file")
 _set_circle :: proc "c" (L: ^lua.State) -> i32 {
     item := SpatialItemFromLua(L, 1)
     radius := f32(lua.L_checknumber(L, 2))

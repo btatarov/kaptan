@@ -59,7 +59,7 @@ print('enabled space query found', space:anyCircle(100, 0, 10), space:countCircl
 
 local disabled_point = space:addPoint(300, 0)
 disabled_point:setEnabled(false)
-print('disabled point remove', disabled_point:remove(), space:anyCircle(300, 0, 1))
+print('disabled point remove', space:remove(disabled_point), space:anyCircle(300, 0, 1))
 
 point:setPos(200, 0)
 print('aabb hits after move', #space:queryAABB(0, 0, 10, 10))
@@ -68,7 +68,7 @@ rect:setCircle(10)
 rect:setPos(0, 0)
 print('changed rect to circle', #space:queryCircle(0, 0, 5))
 
-print('remove circle', circle:remove(), circle:isValid())
+print('remove circle', space:remove(circle), circle:isValid())
 print('circle hits after remove', #space:queryCircle(100, 0, 50))
 
 local other = KaptanSpatial.new()

@@ -95,6 +95,38 @@ SpatialSpaceClear :: proc(space: ^SpatialSpace) {
     clear(&space.query_items)
 }
 
+SpatialSpaceAddItem :: proc(space: ^SpatialSpace, item: ^SpatialItem) {
+    if space == nil || space.is_gone || item == nil || item.item_index >= 0 {
+        return
+    }
+
+    item.item_index = len(space.items)
+    append(&space.items, item)
+}
+
+SpatialSpaceRemoveItem :: proc(space: ^SpatialSpace, item: ^SpatialItem) {
+    if space == nil || item == nil || item.item_index < 0 {
+        return
+    }
+
+    index := item.item_index
+    last_index := len(space.items) - 1
+    if index < 0 || index > last_index {
+        item.item_index = -1
+        return
+    }
+
+    if index != last_index {
+        moved := space.items[last_index]
+        space.items[index] = moved
+        moved.item_index = index
+    }
+
+    resize(&space.items, last_index)
+    item.item_index = -1
+    SpatialItemReleaseRef(item)
+}
+
 SpatialSpaceAddQueryItem :: proc(space: ^SpatialSpace, item: ^SpatialItem) {
     if space == nil || space.is_gone || item == nil || item.query_index >= 0 {
         return
@@ -162,7 +194,7 @@ push_space_lua :: proc(L: ^lua.State, space: ^SpatialSpace) {
 @(private="file")
 add_item :: proc(L: ^lua.State, space: ^SpatialSpace, item: ^SpatialItem) {
     SpatialItemAddRef(item)
-    append(&space.items, item)
+    SpatialSpaceAddItem(space, item)
     SpatialSpaceAddQueryItem(space, item)
     SpatialItemPushLua(L, item)
 }
