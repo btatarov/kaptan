@@ -17,8 +17,26 @@ print('aabb hits center', #space:queryAABB(0, 0, 10, 10))
 print('circle hits right', #space:queryCircle(100, 0, 10))
 print('ellipse hits left', #space:queryEllipse(-100, 0, 40, 12))
 
+local hits = { 'stale', 'stale' }
+local hit_count = space:queryCircleInto(hits, 100, 0, 10)
+print('circle into count', hit_count, hits[1]:getTag(), hits[2] == nil)
+print('circle count right', space:countCircle(100, 0, 10))
+print('circle any right', space:anyCircle(100, 0, 10))
+print('aabb into count', space:queryAABBInto(hits, 0, 0, 10, 10), hits[1]:getTag(), hits[2] == nil)
+print('aabb count center', space:countAABB(0, 0, 10, 10))
+print('aabb any center', space:anyAABB(0, 0, 10, 10))
+print('ellipse into count', space:queryEllipseInto(hits, -100, 0, 40, 12), hits[1]:getTag(), hits[2] == nil)
+print('ellipse count left', space:countEllipse(-100, 0, 40, 12))
+print('ellipse any left', space:anyEllipse(-100, 0, 40, 12))
+
 local nearest = space:nearest(90, 0)
 print('nearest tag', nearest.item:getTag(), nearest.x, nearest.y)
+
+local nearest_result = {}
+print('nearest into found', space:nearestInto(nearest_result, 90, 0), nearest_result.item:getTag(), nearest_result.x, nearest_result.y)
+print('nearest item tag', space:nearestItem(90, 0):getTag())
+print('nearest into missing', space:nearestInto(nearest_result, 1000, 0, 1), nearest_result.item == nil)
+print('nearest item missing', space:nearestItem(1000, 0, 1) == nil)
 
 point:setPos(200, 0)
 print('aabb hits after move', #space:queryAABB(0, 0, 10, 10))

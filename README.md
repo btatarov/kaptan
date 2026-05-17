@@ -865,11 +865,26 @@ local closest = space:nearest(0, 0, 500)
 if closest then
     print(closest.item:getTag(), closest.distance)
 end
+
+local closestItem = space:nearestItem(0, 0, 500)
+if closestItem then
+    print(closestItem:getTag())
+end
+
+local hits = {}
+local count = space:queryCircleInto(hits, 0, 0, 160)
+for i = 1, count do
+    print(hits[i]:getTag())
+end
+
+if space:anyCircle(0, 0, 160) then
+    print('something nearby')
+end
 ```
 
 `addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, and removed with `item:remove()` or `space:remove(item)`. `space:clear()` invalidates all items in the space.
 
-Queries return arrays of spatial item handles. `nearest(x, y, maxDistance)` returns `{ item, x, y, distance }` or `nil`; `maxDistance` is optional.
+Queries return arrays of spatial item handles. `nearest(x, y, maxDistance)` returns `{ item, x, y, distance }` or `nil`; `nearestItem(x, y, maxDistance)` returns only the closest item or `nil`; `maxDistance` is optional. For per-frame checks, prefer `anyAABB`, `anyCircle`, `anyEllipse`, `countAABB`, `countCircle`, or `countEllipse` because they avoid result tables and item handles. `queryAABBInto`, `queryCircleInto`, `queryEllipseInto`, and `nearestInto` reuse a caller-provided table and clear stale entries, but query result items are still pushed as Lua userdata handles.
 
 ## Input System
 
@@ -1337,11 +1352,22 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * item = space:addEllipse(x, y, radiusX, radiusY)
 * item = space:addPoint(x, y)
 * item = space:addRect(x, y, width, height)
+* space:anyAABB(x, y, width, height)
+* space:anyCircle(x, y, radius)
+* space:anyEllipse(x, y, radiusX, radiusY)
 * space:clear()
+* space:countAABB(x, y, width, height)
+* space:countCircle(x, y, radius)
+* space:countEllipse(x, y, radiusX, radiusY)
 * space:nearest(x, y, maxDistance)
+* space:nearestInto(resultTable, x, y, maxDistance)
+* space:nearestItem(x, y, maxDistance)
 * space:queryAABB(x, y, width, height)
+* space:queryAABBInto(resultTable, x, y, width, height)
 * space:queryCircle(x, y, radius)
+* space:queryCircleInto(resultTable, x, y, radius)
 * space:queryEllipse(x, y, radiusX, radiusY)
+* space:queryEllipseInto(resultTable, x, y, radiusX, radiusY)
 * space:remove(item)
 
 #### Spatial Item
