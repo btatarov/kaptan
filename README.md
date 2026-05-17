@@ -854,6 +854,7 @@ enemy:setTag('enemy')
 
 local pickup = space:addRect(-50, 0, 32, 32)
 pickup:setTag('pickup')
+pickup:setEnabled(false)
 
 for _, item in ipairs(space:queryCircle(0, 0, 160)) do
     if item:getTag() == 'enemy' then
@@ -882,7 +883,7 @@ if space:anyCircle(0, 0, 160) then
 end
 ```
 
-`addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, and removed with `item:remove()` or `space:remove(item)`. `space:clear()` invalidates all items in the space.
+`addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, disabled with `setEnabled(false)`, and removed with `item:remove()` or `space:remove(item)`. Disabled items remain valid and editable but are ignored by queries and nearest checks. `space:clear()` invalidates all items in the space.
 
 Queries return arrays of spatial item handles. `nearest(x, y, maxDistance)` returns `{ item, x, y, distance }` or `nil`; `nearestItem(x, y, maxDistance)` returns only the closest item or `nil`; `maxDistance` is optional. For per-frame checks, prefer `anyAABB`, `anyCircle`, `anyEllipse`, `countAABB`, `countCircle`, or `countEllipse` because they avoid result tables and item handles. `queryAABBInto`, `queryCircleInto`, `queryEllipseInto`, and `nearestInto` reuse a caller-provided table and clear stale entries, but query result items are still pushed as Lua userdata handles.
 
@@ -1374,9 +1375,11 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 
 * item:getPos()
 * item:getTag()
+* item:isEnabled()
 * item:isValid()
 * item:remove()
 * item:setCircle(radius)
+* item:setEnabled(enabled)
 * item:setEllipse(radiusX, radiusY)
 * item:setPos(x, y)
 * item:setRect(width, height)

@@ -142,7 +142,7 @@ query_items :: proc(space: ^SpatialSpace, hit_test: HitTestProc, data: rawptr) -
     }
 
     for item in space.items {
-        if SpatialItemIsValid(item) && hit_test(item, data) {
+        if SpatialItemIsQueryable(item) && hit_test(item, data) {
             append(&hits, item)
         }
     }
@@ -158,7 +158,7 @@ query_into_table :: proc(L: ^lua.State, table_idx: i32, space: ^SpatialSpace, hi
 
     if space != nil && ! space.is_gone {
         for item in space.items {
-            if SpatialItemIsValid(item) && hit_test(item, data) {
+            if SpatialItemIsQueryable(item) && hit_test(item, data) {
                 count += 1
                 SpatialItemPushLua(L, item)
                 lua.rawseti(L, abs_idx, count)
@@ -182,7 +182,7 @@ query_count :: proc "contextless" (space: ^SpatialSpace, hit_test: HitTestProc, 
     }
 
     for item in space.items {
-        if SpatialItemIsValid(item) && hit_test(item, data) {
+        if SpatialItemIsQueryable(item) && hit_test(item, data) {
             count += 1
         }
     }
@@ -197,7 +197,7 @@ query_any :: proc "contextless" (space: ^SpatialSpace, hit_test: HitTestProc, da
     }
 
     for item in space.items {
-        if SpatialItemIsValid(item) && hit_test(item, data) {
+        if SpatialItemIsQueryable(item) && hit_test(item, data) {
             return true
         }
     }
@@ -423,7 +423,7 @@ nearest_item :: proc "contextless" (space: ^SpatialSpace, x, y, max_distance: f3
 
     if space != nil && ! space.is_gone {
         for item in space.items {
-            if ! SpatialItemIsValid(item) {
+            if ! SpatialItemIsQueryable(item) {
                 continue
             }
 

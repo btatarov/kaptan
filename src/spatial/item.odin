@@ -26,6 +26,7 @@ SpatialItem :: struct {
     tag:      cstring,
     refs:     int,
     is_gone:  bool,
+    enabled:  bool,
 }
 
 SpatialItemLuaBind :: proc(L: ^lua.State) {
@@ -36,9 +37,11 @@ SpatialItemLuaBind :: proc(L: ^lua.State) {
     @static instance_reg_table: []lua.L_Reg = {
         { "getPos",     _get_pos },
         { "getTag",     _get_tag },
+        { "isEnabled",  _is_enabled },
         { "isValid",    _is_valid },
         { "remove",     _remove },
         { "setCircle",  _set_circle },
+        { "setEnabled", _set_enabled },
         { "setEllipse", _set_ellipse },
         { "setPos",     _set_pos },
         { "setRect",    _set_rect },
@@ -107,6 +110,10 @@ SpatialItemIsValid :: proc "contextless" (item: ^SpatialItem) -> bool {
     return item != nil && ! item.is_gone && item.space != nil && ! item.space.is_gone
 }
 
+SpatialItemIsQueryable :: proc "contextless" (item: ^SpatialItem) -> bool {
+    return SpatialItemIsValid(item) && item.enabled
+}
+
 SpatialItemRemove :: proc(item: ^SpatialItem) -> bool {
     if ! SpatialItemIsValid(item) {
         return false
@@ -155,6 +162,7 @@ init_spatial_item :: proc(item: ^SpatialItem, space: ^SpatialSpace, kind: Spatia
     item.tag = nil
     item.refs = 0
     item.is_gone = false
+    item.enabled = true
 }
 
 @(private="file")
@@ -206,6 +214,14 @@ _is_valid :: proc "c" (L: ^lua.State) -> i32 {
 }
 
 @(private="file")
+_is_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    item := SpatialItemFromLua(L, 1)
+    lua.pushboolean(L, b32(item.enabled))
+
+    return 1
+}
+
+@(private="file")
 _remove :: proc "c" (L: ^lua.State) -> i32 {
     context = core.GetDefaultContext()
 
@@ -226,6 +242,14 @@ _set_circle :: proc "c" (L: ^lua.State) -> i32 {
     item.kind = .Circle
     item.radius_x = radius
     item.radius_y = radius
+
+    return 0
+}
+
+@(private="file")
+_set_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    item := SpatialItemFromLua(L, 1)
+    item.enabled = bool(lua.toboolean(L, 2))
 
     return 0
 }

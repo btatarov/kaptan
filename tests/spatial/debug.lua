@@ -38,6 +38,14 @@ print('nearest item tag', space:nearestItem(90, 0):getTag())
 print('nearest into missing', space:nearestInto(nearest_result, 1000, 0, 1), nearest_result.item == nil)
 print('nearest item missing', space:nearestItem(1000, 0, 1) == nil)
 
+circle:setEnabled(false)
+print('circle enabled after disable', circle:isEnabled(), circle:isValid())
+print('disabled circle query ignored', space:anyCircle(100, 0, 10), space:countCircle(100, 0, 10))
+print('disabled circle nearest ignored', space:nearestItem(90, 0):getTag())
+circle:setEnabled(true)
+print('circle enabled after enable', circle:isEnabled())
+print('enabled circle query found', space:anyCircle(100, 0, 10), space:countCircle(100, 0, 10))
+
 point:setPos(200, 0)
 print('aabb hits after move', #space:queryAABB(0, 0, 10, 10))
 
