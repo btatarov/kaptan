@@ -842,6 +842,35 @@ Kaptan does not define game-specific category constants. Define category bits in
 
 `shape:destroy()` removes one shape from its body. `body:destroy()`, `KaptanPhysics.clear()`, and `KaptanPhysics.destroy()` invalidate all shapes attached to destroyed bodies.
 
+## Spatial Queries
+
+Use `KaptanSpatial` for lightweight gameplay queries that do not need Box2D collision simulation. Spatial items are simple point, circle, rect, or ellipse markers stored in Kaptan world coordinates. The first implementation uses a linear scan, which is simple and suitable for modest entity counts; the Lua API can stay the same if a spatial hash is added later.
+
+```lua
+local space = KaptanSpatial.new()
+
+local enemy = space:addCircle(100, 0, 24)
+enemy:setTag('enemy')
+
+local pickup = space:addRect(-50, 0, 32, 32)
+pickup:setTag('pickup')
+
+for _, item in ipairs(space:queryCircle(0, 0, 160)) do
+    if item:getTag() == 'enemy' then
+        print('near enemy')
+    end
+end
+
+local closest = space:nearest(0, 0, 500)
+if closest then
+    print(closest.item:getTag(), closest.distance)
+end
+```
+
+`addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, and removed with `item:remove()` or `space:remove(item)`. `space:clear()` invalidates all items in the space.
+
+Queries return arrays of spatial item handles. `nearest(x, y, maxDistance)` returns `{ item, x, y, distance }` or `nil`; `maxDistance` is optional.
+
 ## Input System
 
 Kaptan exposes input through singleton globals. Input is polled from Lua, usually inside `KaptanWindow.setLoopCallback`.
@@ -1300,6 +1329,32 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * shape:setRestitution(value)
 * shape:setSensorEvents(enabled)
 * shape:setTag(tag)
+
+### Spatial
+
+* space = KaptanSpatial.new()
+* item = space:addCircle(x, y, radius)
+* item = space:addEllipse(x, y, radiusX, radiusY)
+* item = space:addPoint(x, y)
+* item = space:addRect(x, y, width, height)
+* space:clear()
+* space:nearest(x, y, maxDistance)
+* space:queryAABB(x, y, width, height)
+* space:queryCircle(x, y, radius)
+* space:queryEllipse(x, y, radiusX, radiusY)
+* space:remove(item)
+
+#### Spatial Item
+
+* item:getPos()
+* item:getTag()
+* item:isValid()
+* item:remove()
+* item:setCircle(radius)
+* item:setEllipse(radiusX, radiusY)
+* item:setPos(x, y)
+* item:setRect(width, height)
+* item:setTag(tag)
 
 ### Keyboard
 

@@ -50,9 +50,9 @@ local resumed_x = paused_body:getPos()
 print('resumed manual step moved body', resumed_x > 0)
 paused_body:destroy()
 
-local CATEGORY_PLAYER = 1 << 0
-local CATEGORY_ENEMY = 1 << 1
-local CATEGORY_WALL = 1 << 2
+local CATEGORY_PLAYER = 1
+local CATEGORY_ENEMY = 2
+local CATEGORY_WALL = 4
 
 local body = KaptanPhysicsBody.new(KaptanPhysicsBody.DYNAMIC)
 body:setTag('player')
@@ -81,7 +81,7 @@ box:setDensity(2)
 box:setFriction(0.25)
 box:setRestitution(0.5)
 box:setCategory(CATEGORY_ENEMY)
-box:setMask(CATEGORY_PLAYER | CATEGORY_WALL)
+box:setMask(CATEGORY_PLAYER + CATEGORY_WALL)
 box:setGroup(-1)
 box:setContactEvents(true)
 box:setHitEvents(true)

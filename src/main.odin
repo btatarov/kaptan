@@ -10,6 +10,7 @@ import "core"
 import "graphics"
 import "input"
 import "physics"
+import "spatial"
 
 main :: proc() {
     core.InitContext()
@@ -85,6 +86,13 @@ main :: proc() {
     defer {
         audio.AudioChannelLuaUnbind(L)
         audio.AudioSystemLuaUnbind(L)
+    }
+
+    spatial.SpatialSpaceLuaBind(L)
+    spatial.SpatialItemLuaBind(L)
+    defer {
+        spatial.SpatialItemLuaUnbind(L)
+        spatial.SpatialSpaceLuaUnbind(L)
     }
 
     physics.PhysicsLuaBind(L)
