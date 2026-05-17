@@ -46,6 +46,21 @@ circle:setEnabled(true)
 print('circle enabled after enable', circle:isEnabled())
 print('enabled circle query found', space:anyCircle(100, 0, 10), space:countCircle(100, 0, 10))
 
+space:setEnabled(false)
+print('space enabled after disable', space:isEnabled())
+local disabled_count = space:queryCircleInto(hits, 100, 0, 10)
+print('disabled space query empty', #space:queryCircle(100, 0, 10), disabled_count, hits[1] == nil)
+print('disabled space any count', space:anyCircle(100, 0, 10), space:countCircle(100, 0, 10))
+print('disabled space nearest', space:nearest(90, 0) == nil, space:nearestItem(90, 0) == nil)
+print('disabled space nearest into', space:nearestInto(nearest_result, 90, 0), nearest_result.item == nil)
+space:setEnabled(true)
+print('space enabled after enable', space:isEnabled())
+print('enabled space query found', space:anyCircle(100, 0, 10), space:countCircle(100, 0, 10))
+
+local disabled_point = space:addPoint(300, 0)
+disabled_point:setEnabled(false)
+print('disabled point remove', disabled_point:remove(), space:anyCircle(300, 0, 1))
+
 point:setPos(200, 0)
 print('aabb hits after move', #space:queryAABB(0, 0, 10, 10))
 

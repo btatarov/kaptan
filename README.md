@@ -881,9 +881,11 @@ end
 if space:anyCircle(0, 0, 160) then
     print('something nearby')
 end
+
+space:setEnabled(false) -- skip all spatial query work while paused or dead
 ```
 
-`addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, disabled with `setEnabled(false)`, and removed with `item:remove()` or `space:remove(item)`. Disabled items remain valid and editable but are ignored by queries and nearest checks. `space:clear()` invalidates all items in the space.
+`addPoint(x, y)`, `addCircle(x, y, radius)`, `addRect(x, y, width, height)`, and `addEllipse(x, y, radiusX, radiusY)` return `KaptanSpatialItem` handles. Items can be moved with `item:setPos(x, y)`, reshaped with `setCircle`, `setRect`, or `setEllipse`, tagged with `setTag`, disabled with `setEnabled(false)`, and removed with `item:remove()` or `space:remove(item)`. Disabled items remain valid and editable but are removed from the query hot list, so queries and nearest checks do not visit them. `space:setEnabled(false)` makes all query and nearest APIs return immediately without scanning items, which is useful for pause, death, or cutscene states. `space:clear()` invalidates all items in the space.
 
 Queries return arrays of spatial item handles. `nearest(x, y, maxDistance)` returns `{ item, x, y, distance }` or `nil`; `nearestItem(x, y, maxDistance)` returns only the closest item or `nil`; `maxDistance` is optional. For per-frame checks, prefer `anyAABB`, `anyCircle`, `anyEllipse`, `countAABB`, `countCircle`, or `countEllipse` because they avoid result tables and item handles. `queryAABBInto`, `queryCircleInto`, `queryEllipseInto`, and `nearestInto` reuse a caller-provided table and clear stale entries, but query result items are still pushed as Lua userdata handles.
 
@@ -1360,6 +1362,7 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * space:countAABB(x, y, width, height)
 * space:countCircle(x, y, radius)
 * space:countEllipse(x, y, radiusX, radiusY)
+* space:isEnabled()
 * space:nearest(x, y, maxDistance)
 * space:nearestInto(resultTable, x, y, maxDistance)
 * space:nearestItem(x, y, maxDistance)
@@ -1370,6 +1373,7 @@ All Kaptan userdata objects support `object:setInterface(interface_table)`. This
 * space:queryEllipse(x, y, radiusX, radiusY)
 * space:queryEllipseInto(resultTable, x, y, radiusX, radiusY)
 * space:remove(item)
+* space:setEnabled(enabled)
 
 #### Spatial Item
 

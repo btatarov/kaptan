@@ -9,9 +9,11 @@ import lua "vendor:lua/jit"
 import "../core"
 
 SpatialSpace :: struct {
-    items:   [dynamic]^SpatialItem,
-    refs:    int,
-    is_gone: bool,
+    items:       [dynamic]^SpatialItem,
+    query_items: [dynamic]^SpatialItem,
+    refs:        int,
+    is_gone:     bool,
+    enabled:     bool,
 }
 
 SpatialSpaceLuaBind :: proc(L: ^lua.State) {
@@ -32,6 +34,7 @@ SpatialSpaceLuaBind :: proc(L: ^lua.State) {
         { "countAABB",    _count_aabb },
         { "countCircle",  _count_circle },
         { "countEllipse", _count_ellipse },
+        { "isEnabled",    _is_enabled },
         { "nearest",      _nearest },
         { "nearestInto",  _nearest_into },
         { "nearestItem",  _nearest_item },
@@ -42,6 +45,7 @@ SpatialSpaceLuaBind :: proc(L: ^lua.State) {
         { "queryEllipse", _query_ellipse },
         { "queryEllipseInto", _query_ellipse_into },
         { "remove",       _remove },
+        { "setEnabled",   _set_enabled },
         { nil, nil },
     }
 
@@ -73,6 +77,10 @@ SpatialSpaceReleaseRef :: proc(space: ^SpatialSpace) {
     }
 }
 
+SpatialSpaceIsQueryable :: proc "contextless" (space: ^SpatialSpace) -> bool {
+    return space != nil && ! space.is_gone && space.enabled
+}
+
 SpatialSpaceClear :: proc(space: ^SpatialSpace) {
     if space == nil || space.is_gone {
         return
@@ -84,6 +92,38 @@ SpatialSpaceClear :: proc(space: ^SpatialSpace) {
     }
 
     clear(&space.items)
+    clear(&space.query_items)
+}
+
+SpatialSpaceAddQueryItem :: proc(space: ^SpatialSpace, item: ^SpatialItem) {
+    if space == nil || space.is_gone || item == nil || item.query_index >= 0 {
+        return
+    }
+
+    item.query_index = len(space.query_items)
+    append(&space.query_items, item)
+}
+
+SpatialSpaceRemoveQueryItem :: proc(space: ^SpatialSpace, item: ^SpatialItem) {
+    if space == nil || item == nil || item.query_index < 0 {
+        return
+    }
+
+    index := item.query_index
+    last_index := len(space.query_items) - 1
+    if index < 0 || index > last_index {
+        item.query_index = -1
+        return
+    }
+
+    if index != last_index {
+        moved := space.query_items[last_index]
+        space.query_items[index] = moved
+        moved.query_index = index
+    }
+
+    resize(&space.query_items, last_index)
+    item.query_index = -1
 }
 
 @(private="file")
@@ -91,8 +131,10 @@ init_space :: proc(space: ^SpatialSpace) {
     log.debugf("KaptanSpatial: Init")
 
     space.items = make([dynamic]^SpatialItem)
+    space.query_items = make([dynamic]^SpatialItem)
     space.refs = 0
     space.is_gone = false
+    space.enabled = true
 }
 
 @(private="file")
@@ -104,6 +146,7 @@ destroy_space :: proc(space: ^SpatialSpace) {
     log.debugf("KaptanSpatial: Destroy")
     SpatialSpaceClear(space)
     space.is_gone = true
+    delete(space.query_items)
     delete(space.items)
     free(space)
 }
@@ -120,6 +163,7 @@ push_space_lua :: proc(L: ^lua.State, space: ^SpatialSpace) {
 add_item :: proc(L: ^lua.State, space: ^SpatialSpace, item: ^SpatialItem) {
     SpatialItemAddRef(item)
     append(&space.items, item)
+    SpatialSpaceAddQueryItem(space, item)
     SpatialItemPushLua(L, item)
 }
 
@@ -137,12 +181,12 @@ push_items_array :: proc(L: ^lua.State, items: []^SpatialItem) {
 
 query_items :: proc(space: ^SpatialSpace, hit_test: HitTestProc, data: rawptr) -> [dynamic]^SpatialItem {
     hits := make([dynamic]^SpatialItem, allocator = context.temp_allocator)
-    if space == nil || space.is_gone {
+    if ! SpatialSpaceIsQueryable(space) {
         return hits
     }
 
-    for item in space.items {
-        if SpatialItemIsQueryable(item) && hit_test(item, data) {
+    for item in space.query_items {
+        if hit_test(item, data) {
             append(&hits, item)
         }
     }
@@ -156,9 +200,9 @@ query_into_table :: proc(L: ^lua.State, table_idx: i32, space: ^SpatialSpace, hi
     old_count := i32(lua.objlen(L, abs_idx))
     count := i32(0)
 
-    if space != nil && ! space.is_gone {
-        for item in space.items {
-            if SpatialItemIsQueryable(item) && hit_test(item, data) {
+    if SpatialSpaceIsQueryable(space) {
+        for item in space.query_items {
+            if hit_test(item, data) {
                 count += 1
                 SpatialItemPushLua(L, item)
                 lua.rawseti(L, abs_idx, count)
@@ -177,12 +221,12 @@ query_into_table :: proc(L: ^lua.State, table_idx: i32, space: ^SpatialSpace, hi
 @(private="file")
 query_count :: proc "contextless" (space: ^SpatialSpace, hit_test: HitTestProc, data: rawptr) -> int {
     count := 0
-    if space == nil || space.is_gone {
+    if ! SpatialSpaceIsQueryable(space) {
         return count
     }
 
-    for item in space.items {
-        if SpatialItemIsQueryable(item) && hit_test(item, data) {
+    for item in space.query_items {
+        if hit_test(item, data) {
             count += 1
         }
     }
@@ -192,12 +236,12 @@ query_count :: proc "contextless" (space: ^SpatialSpace, hit_test: HitTestProc, 
 
 @(private="file")
 query_any :: proc "contextless" (space: ^SpatialSpace, hit_test: HitTestProc, data: rawptr) -> bool {
-    if space == nil || space.is_gone {
+    if ! SpatialSpaceIsQueryable(space) {
         return false
     }
 
-    for item in space.items {
-        if SpatialItemIsQueryable(item) && hit_test(item, data) {
+    for item in space.query_items {
+        if hit_test(item, data) {
             return true
         }
     }
@@ -421,12 +465,8 @@ nearest_item :: proc "contextless" (space: ^SpatialSpace, x, y, max_distance: f3
         best_dist_sq = max_distance * max_distance
     }
 
-    if space != nil && ! space.is_gone {
-        for item in space.items {
-            if ! SpatialItemIsQueryable(item) {
-                continue
-            }
-
+    if SpatialSpaceIsQueryable(space) {
+        for item in space.query_items {
             dx := item.x - x
             dy := item.y - y
             dist_sq := dx * dx + dy * dy
@@ -578,6 +618,22 @@ _clear :: proc "c" (L: ^lua.State) -> i32 {
 
     space := SpatialSpaceFromLua(L, 1)
     SpatialSpaceClear(space)
+
+    return 0
+}
+
+@(private="file")
+_is_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    space := SpatialSpaceFromLua(L, 1)
+    lua.pushboolean(L, b32(space.enabled))
+
+    return 1
+}
+
+@(private="file")
+_set_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    space := SpatialSpaceFromLua(L, 1)
+    space.enabled = bool(lua.toboolean(L, 2))
 
     return 0
 }

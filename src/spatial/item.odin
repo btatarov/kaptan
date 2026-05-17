@@ -27,6 +27,7 @@ SpatialItem :: struct {
     refs:     int,
     is_gone:  bool,
     enabled:  bool,
+    query_index: int,
 }
 
 SpatialItemLuaBind :: proc(L: ^lua.State) {
@@ -111,7 +112,24 @@ SpatialItemIsValid :: proc "contextless" (item: ^SpatialItem) -> bool {
 }
 
 SpatialItemIsQueryable :: proc "contextless" (item: ^SpatialItem) -> bool {
-    return SpatialItemIsValid(item) && item.enabled
+    return SpatialItemIsValid(item) && item.enabled && item.query_index >= 0
+}
+
+SpatialItemSetEnabled :: proc(item: ^SpatialItem, enabled: bool) {
+    if item == nil || item.enabled == enabled {
+        return
+    }
+
+    item.enabled = enabled
+    if ! SpatialItemIsValid(item) {
+        return
+    }
+
+    if enabled {
+        SpatialSpaceAddQueryItem(item.space, item)
+    } else {
+        SpatialSpaceRemoveQueryItem(item.space, item)
+    }
 }
 
 SpatialItemRemove :: proc(item: ^SpatialItem) -> bool {
@@ -121,6 +139,7 @@ SpatialItemRemove :: proc(item: ^SpatialItem) -> bool {
 
     space := item.space
     item.is_gone = true
+    SpatialSpaceRemoveQueryItem(space, item)
     item.space = nil
     clear_item_tag(item)
 
@@ -143,6 +162,7 @@ SpatialItemInvalidateFromSpace :: proc(item: ^SpatialItem) {
     }
 
     item.is_gone = true
+    item.query_index = -1
     item.space = nil
     clear_item_tag(item)
 }
@@ -163,6 +183,7 @@ init_spatial_item :: proc(item: ^SpatialItem, space: ^SpatialSpace, kind: Spatia
     item.refs = 0
     item.is_gone = false
     item.enabled = true
+    item.query_index = -1
 }
 
 @(private="file")
@@ -248,8 +269,10 @@ _set_circle :: proc "c" (L: ^lua.State) -> i32 {
 
 @(private="file")
 _set_enabled :: proc "c" (L: ^lua.State) -> i32 {
+    context = core.GetDefaultContext()
+
     item := SpatialItemFromLua(L, 1)
-    item.enabled = bool(lua.toboolean(L, 2))
+    SpatialItemSetEnabled(item, bool(lua.toboolean(L, 2)))
 
     return 0
 }
